@@ -8,7 +8,7 @@ practice_bp = Blueprint('practice', __name__)
 @practice_bp.route('/record', methods=['POST'])
 @jwt_required()
 def add_practice_record():
-    """孩子添加练琴记录 (5分钟为单位)"""
+    """孩子添加练琴记录 (15分鐘為單位)"""
     identity = get_jwt_identity()
     
     if not identity.startswith('child_'):
@@ -21,9 +21,9 @@ def add_practice_record():
     if not data or not data.get('practice_minutes'):
         return jsonify({'error': '缺少练琴时间'}), 400
     
-    # 验证是否以5分钟为单位
-    if data['practice_minutes'] % 5 != 0:
-        return jsonify({'error': '练琴时间必须以5分钟为单位'}), 400
+    # 驗證是否以15分鐘為單位
+    if data['practice_minutes'] % 15 != 0:
+        return jsonify({'error': '練琴時間必須以15分鐘為單位'}), 400
     
     child = Child.query.get(child_id)
     if not child:

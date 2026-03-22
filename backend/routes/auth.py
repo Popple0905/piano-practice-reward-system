@@ -100,6 +100,37 @@ def child_login():
         'name': child.name
     }), 200
 
+@auth_bp.route('/parent/change-password', methods=['POST'])
+@jwt_required()
+def parent_change_password():
+    """家長修改自己的密碼"""
+    identity = get_jwt_identity()
+
+    if not identity.startswith('parent_'):
+        return jsonify({'error': '權限不足'}), 403
+
+    parent_id = int(identity.split('_', 1)[1])
+    data = request.get_json()
+
+    if not data or not data.get('current_password') or not data.get('new_password'):
+        return jsonify({'error': '缺少目前密碼或新密碼'}), 400
+
+    parent = Parent.query.get(parent_id)
+    if not parent:
+        return jsonify({'error': '用戶不存在'}), 404
+
+    if not check_password_hash(parent.password_hash, data['current_password']):
+        return jsonify({'error': '目前密碼錯誤'}), 401
+
+    if len(data['new_password']) < 4:
+        return jsonify({'error': '新密碼至少需要 4 個字元'}), 400
+
+    parent.password_hash = generate_password_hash(data['new_password'])
+    db.session.commit()
+
+    return jsonify({'message': '密碼已更新'}), 200
+
+
 @auth_bp.route('/parent/me', methods=['GET'])
 @jwt_required()
 def get_parent_info():

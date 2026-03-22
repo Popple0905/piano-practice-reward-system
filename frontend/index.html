@@ -747,7 +747,7 @@
                 <div id="childForm" style="display: none;">
                     <div class="form-group">
                         <label for="childId">孩子 ID</label>
-                        <input type="text" id="childId" placeholder="輸入孩子ID（英文或數字）" value="1">
+                        <input type="text" id="childId" placeholder="輸入孩子ID（英文或數字）" value="1" autocapitalize="none" autocorrect="off" autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label for="childPassword">密碼</label>
@@ -797,6 +797,7 @@
                         <button class="nav-tab active" onclick="switchTab('children-list')">👧 我的孩子</button>
                         <button class="nav-tab" onclick="switchTab('pending-records')">⏳ 待批準記錄</button>
                         <button class="nav-tab" onclick="switchTab('manage-children')">👤 管理兒童帳號</button>
+                        <button class="nav-tab" onclick="switchTab('parent-settings')">⚙️ 帳號設定</button>
                     </div>
 
                     <!-- 孩子列表 -->
@@ -822,7 +823,7 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="newChildId">帳號 ID（選填，留空自動分配）</label>
-                                    <input type="text" id="newChildId" placeholder="英文或數字，例如：kid01、101">
+                                    <input type="text" id="newChildId" placeholder="英文或數字，例如：kid01、101" autocapitalize="none" autocorrect="off" autocomplete="off">
                                 </div>
                                 <div class="form-group">
                                     <label for="newChildAge">年齡（選填）</label>
@@ -846,6 +847,33 @@
                         <div class="form-section">
                             <h3>👧 現有兒童帳號</h3>
                             <div id="manageChildrenList" style="margin-top: 15px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 帳號設定 -->
+                    <div id="parent-settings" class="tab-content">
+                        <div class="form-section">
+                            <h3>🔑 修改登入密碼</h3>
+                            <div class="form-row full">
+                                <div class="form-group">
+                                    <label for="currentPassword">目前密碼</label>
+                                    <input type="password" id="currentPassword" placeholder="輸入目前密碼">
+                                </div>
+                            </div>
+                            <div class="form-row full">
+                                <div class="form-group">
+                                    <label for="newPassword">新密碼</label>
+                                    <input type="password" id="newPassword" placeholder="輸入新密碼（至少4個字元）">
+                                </div>
+                            </div>
+                            <div class="form-row full">
+                                <div class="form-group">
+                                    <label for="confirmPassword">確認新密碼</label>
+                                    <input type="password" id="confirmPassword" placeholder="再次輸入新密碼">
+                                </div>
+                            </div>
+                            <button class="submit-btn" onclick="changeParentPassword()">更新密碼</button>
+                            <div id="changePasswordResult" style="margin-top: 15px;"></div>
                         </div>
                     </div>
 
@@ -877,8 +905,8 @@
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="practiceMinutes">練琴時間 (5分鐘單位)</label>
-                                    <input type="number" id="practiceMinutes" placeholder="例: 30" min="5" step="5">
+                                    <label for="practiceMinutes">練琴時間 (15分鐘單位)</label>
+                                    <input type="number" id="practiceMinutes" placeholder="例: 30" min="15" step="15" value="15">
                                 </div>
                             </div>
                             <div class="form-row full">
@@ -945,7 +973,7 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'http://localhost:5000/api';
+        const API_BASE_URL = `${window.location.origin}/api`;
         let currentUserType = 'parent';
         let currentToken = null;
         let currentUserId = null;
@@ -1145,7 +1173,7 @@
             }
 
             container.innerHTML = children.map(child => `
-                <div class="child-card" onclick="selectChildForParent(${child.id}, '${child.name}')">
+                <div class="child-card" onclick="selectChildForParent('${child.id}', '${child.name}')">
                     <div class="child-card-header">
                         <div>
                             <div class="child-name">👧 ${child.name}</div>
@@ -1171,7 +1199,7 @@
                         </div>
                     </div>
                     <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
-                        <button class="submit-btn" style="width: 100%; background: #28a745;" onclick="event.stopPropagation(); showRewardDialog(${child.id}, '${child.name}')">
+                        <button class="submit-btn" style="width: 100%; background: #28a745;" onclick="event.stopPropagation(); showRewardDialog('${child.id}', '${child.name}')">
                             🎁 獎勵遊戲時間
                         </button>
                     </div>
@@ -1480,6 +1508,42 @@
             }
         }
 
+        // 修改家長密碼
+        async function changeParentPassword() {
+            const current = document.getElementById('currentPassword').value;
+            const newPwd = document.getElementById('newPassword').value;
+            const confirm = document.getElementById('confirmPassword').value;
+            const resultDiv = document.getElementById('changePasswordResult');
+
+            if (!current) { showError('請輸入目前密碼'); return; }
+            if (!newPwd || newPwd.length < 4) { showError('新密碼至少需要 4 個字元'); return; }
+            if (newPwd !== confirm) { showError('兩次輸入的新密碼不一致'); return; }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/parent/change-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({ current_password: current, new_password: newPwd })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '更新失敗');
+                }
+
+                resultDiv.innerHTML = '<div style="background:#efe;color:#3a3;padding:10px;border-radius:6px;">✅ 密碼已成功更新</div>';
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+
+            } catch (error) {
+                resultDiv.innerHTML = `<div style="background:#fee;color:#c33;padding:10px;border-radius:6px;">❌ ${error.message}</div>`;
+            }
+        }
+
         // ── 管理兒童帳號 ──────────────────────────────────────────
 
         // 載入現有兒童帳號列表
@@ -1509,9 +1573,9 @@
                             年齡：${child.age || '未設置'} ｜ 遊戲餘額：${child.game_balance} 分鐘
                         </div>
                         <div class="manage-child-actions">
-                            <button class="manage-btn rename" onclick="renameChild(${child.id}, '${child.name.replace(/'/g, "\\'")}')">✏️ 修改名稱</button>
-                            <button class="manage-btn password" onclick="changeChildPassword(${child.id}, '${child.name.replace(/'/g, "\\'")}')">🔑 修改密碼</button>
-                            <button class="manage-btn delete" onclick="deleteChildAccount(${child.id}, '${child.name.replace(/'/g, "\\'")}')">🗑️ 刪除帳號</button>
+                            <button class="manage-btn rename" onclick="renameChild('${child.id}', '${child.name.replace(/'/g, "\\'")}')">✏️ 修改名稱</button>
+                            <button class="manage-btn password" onclick="changeChildPassword('${child.id}', '${child.name.replace(/'/g, "\\'")}')">🔑 修改密碼</button>
+                            <button class="manage-btn delete" onclick="deleteChildAccount('${child.id}', '${child.name.replace(/'/g, "\\'")}')">🗑️ 刪除帳號</button>
                         </div>
                     </div>
                 `).join('');
@@ -1734,8 +1798,8 @@
                 const notes = document.getElementById('practiceNotes').value;
 
                 if (!date) throw new Error('請選擇日期');
-                if (!minutes || minutes < 5) throw new Error('練琴時間至少 5 分鐘');
-                if (minutes % 5 !== 0) throw new Error('練琴時間必須以 5 分鐘為單位');
+                if (!minutes || minutes < 15) throw new Error('練琴時間至少 15 分鐘');
+                if (minutes % 15 !== 0) throw new Error('練琴時間必須以 15 分鐘為單位');
 
                 // 驗證時間格式並四舍五入到5分鐘倍數
                 if (time) {
@@ -1787,7 +1851,7 @@
                 const data = await response.json();
                 showSuccess('練琴記錄已提交，等待家長批准！');
                 document.getElementById('practiceNotes').value = '';
-                document.getElementById('practiceMinutes').value = '';
+                document.getElementById('practiceMinutes').value = '15';
                 
                 // 重新設置預設時間
                 const now = new Date();
