@@ -667,6 +667,130 @@
         .manage-btn.delete   { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(217,64,64,0.3); }
         .manage-btn.delete:hover   { background: var(--danger); color: white; }
 
+        /* ── Reward points badge in header ── */
+        .reward-points-badge {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 8px;
+            background: linear-gradient(135deg, var(--accent-dim), var(--teal-dim));
+            border: 1px solid var(--border);
+            border-radius: var(--radius-pill);
+            padding: 8px 22px;
+            position: relative; z-index: 1;
+        }
+
+        .reward-points-value {
+            font-size: 32px;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--accent) 30%, var(--teal) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -1px;
+            line-height: 1;
+        }
+
+        .reward-points-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        /* ── Ratio info box ── */
+        .ratio-info-box {
+            padding: 12px 16px;
+            background: var(--bg-elevated);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        /* ── Reward cost badge ── */
+        .reward-cost-badge {
+            font-size: 15px;
+            font-weight: 900;
+            color: var(--danger);
+            background: var(--danger-dim);
+            border: 1px solid rgba(217,64,64,0.2);
+            padding: 4px 14px;
+            border-radius: var(--radius-pill);
+        }
+
+        /* ── Approved records ── */
+        .approved-child-group {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            margin-bottom: 14px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .approved-child-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, var(--accent-dim), var(--teal-dim));
+            border-bottom: 1px solid var(--border);
+        }
+
+        .approved-child-name {
+            font-size: 15px;
+            font-weight: 900;
+            color: var(--text-primary);
+        }
+
+        .approved-child-total {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--accent);
+            background: var(--bg-surface);
+            padding: 3px 12px;
+            border-radius: var(--radius-pill);
+            border: 1px solid var(--accent-dim);
+        }
+
+        .approved-record-table { padding: 0 8px 8px; }
+
+        .approved-record-row {
+            display: grid;
+            grid-template-columns: 110px 100px 1fr 110px;
+            gap: 8px;
+            padding: 9px 8px;
+            font-size: 13px;
+            border-bottom: 1px solid var(--border);
+            align-items: center;
+        }
+
+        .approved-record-row:last-child { border-bottom: none; }
+
+        .approved-record-row.header {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--text-subdued);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            padding-top: 10px;
+        }
+
+        .ar-date   { color: var(--text-primary); font-weight: 700; }
+        .ar-minutes { color: var(--teal); font-weight: 800; }
+        .ar-note   { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ar-time   { color: var(--text-subdued); text-align: right; }
+
+        @media (max-width: 768px) {
+            .approved-record-row {
+                grid-template-columns: 90px 80px 1fr;
+                grid-template-rows: auto auto;
+            }
+            .ar-time { display: none; }
+        }
+
         /* ── Scrollbar ── */
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: var(--bg-elevated); }
@@ -802,6 +926,12 @@
                 <div class="dashboard-header">
                     <h2 id="dashboardTitle">登入成功！</h2>
                     <p id="dashboardSubtitle"></p>
+                    <div id="rewardPointsDisplay" style="display:none; margin-top: 14px;">
+                        <div class="reward-points-badge">
+                            <span class="reward-points-value" id="headerBalanceValue">0</span>
+                            <span class="reward-points-label">練琴獎勵點數</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="user-info">
@@ -828,6 +958,7 @@
                     <div class="nav-tabs">
                         <button class="nav-tab active" onclick="switchTab('children-list')">👧 我的孩子</button>
                         <button class="nav-tab" onclick="switchTab('pending-records')">⏳ 待批準記錄</button>
+                        <button class="nav-tab" onclick="switchTab('approved-records')">✅ 已批准紀錄</button>
                         <button class="nav-tab" onclick="switchTab('manage-children')">👤 管理兒童帳號</button>
                         <button class="nav-tab" onclick="switchTab('parent-settings')">⚙️ 帳號設定</button>
                     </div>
@@ -845,6 +976,14 @@
                         <div class="form-section">
                             <h3>⏳ 待批準的練琴記錄</h3>
                             <div id="pendingRecordsContainer" style="margin-top: 20px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 已批准紀錄 -->
+                    <div id="approved-records" class="tab-content">
+                        <div class="form-section">
+                            <h3>✅ 過去 30 天已批准紀錄</h3>
+                            <div id="approvedRecordsContainer" style="margin-top: 16px;"></div>
                         </div>
                     </div>
 
@@ -918,7 +1057,7 @@
                         <button class="nav-tab active" onclick="switchTab('log-practice')">📝 登錄練琴</button>
                         <button class="nav-tab" onclick="switchTab('practice-history')">📋 練琴紀錄</button>
                         <button class="nav-tab" onclick="switchTab('request-game')">🎮 申請遊戲時間</button>
-                        <button class="nav-tab" onclick="switchTab('game-balance')">⏱️遊戲時間</button>
+                        <button class="nav-tab" onclick="switchTab('reward-history')">🎁 獎勵兌換紀錄</button>
                     </div>
 
                     <!-- 登錄練琴時間 -->
@@ -963,6 +1102,10 @@
                     <!-- 申請遊戲時間 -->
                     <div id="request-game" class="tab-content">
                         <div class="form-section">
+                            <h3>ℹ️ 兌換比例</h3>
+                            <div id="ratioInfo" class="ratio-info-box"></div>
+                        </div>
+                        <div class="form-section">
                             <h3>🎮 申請遊戲時間</h3>
                             <div class="form-row">
                                 <div class="form-group">
@@ -973,28 +1116,13 @@
                             <button class="submit-btn" onclick="requestGameTime()">申請遊戲時間</button>
                         </div>
                         <div id="requestGameResult"></div>
-                        
-                        <div class="form-section" style="margin-top: 30px;">
-                            <h3>📊 申請紀錄</h3>
-                            <div id="gameRequestsList" style="margin-top: 20px;"></div>
-                        </div>
                     </div>
 
-                    <!-- 遊戲時間 -->
-                    <div id="game-balance" class="tab-content">
-                        <div class="stat-box">
-                            <div class="stat-value" id="gameBalanceValue">0</div>
-                            <div class="stat-label">遊戲時間餘額 (分鐘)</div>
-                        </div>
-                        
+                    <!-- 獎勵兌換紀錄 -->
+                    <div id="reward-history" class="tab-content">
                         <div class="form-section">
-                            <h3>ℹ️ 兌換比例</h3>
-                            <div id="ratioInfo" style="padding: 15px; background: white; border-radius: 8px; color: #666;"></div>
-                        </div>
-
-                        <div class="form-section" style="margin-top: 30px;">
-                            <h3>📈 遊戲時間統計</h3>
-                            <div id="gameStats" style="margin-top: 15px;"></div>
+                            <h3>🎁 獎勵兌換紀錄</h3>
+                            <div id="rewardHistoryList" style="margin-top: 16px;"></div>
                         </div>
                     </div>
                 </div>
@@ -1183,6 +1311,7 @@
 
             // 如果是孩子，初始化孩子端功能
             if (userType.includes('孩子')) {
+                document.getElementById('rewardPointsDisplay').style.display = 'block';
                 document.getElementById('childNav').style.display = 'block';
                 loadChildDashboard(userId);
             } else if (userType.includes('家長')) {
@@ -1243,8 +1372,8 @@
                             <div class="child-age">年齡: ${child.age || '未設置'}</div>
                         </div>
                         <div style="text-align: right;">
-                            <div style="font-size: 18px; font-weight: 600; color: #667eea;">${child.game_balance} 分鐘</div>
-                            <div style="font-size: 12px; color: #999;">遊戲時間</div>
+                            <div style="font-size: 18px; font-weight: 600; color: #667eea;">${child.game_balance} 點</div>
+                            <div style="font-size: 12px; color: #999;">獎勵點數</div>
                         </div>
                     </div>
                     <div class="child-stats">
@@ -1263,7 +1392,7 @@
                     </div>
                     <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
                         <button class="submit-btn" style="width: 100%; background: #28a745;" onclick="event.stopPropagation(); showRewardDialog('${child.id}', '${child.name}')">
-                            🎁 獎勵遊戲時間
+                            🎁 獎勵練琴點數
                         </button>
                     </div>
                 </div>
@@ -1341,6 +1470,75 @@
             }
         }
 
+        // 載入已批准紀錄（過去30天，以兒童為單位）
+        async function loadApprovedRecords() {
+            const container = document.getElementById('approvedRecordsContainer');
+            container.innerHTML = '<p style="text-align:center;color:var(--text-subdued);">載入中...</p>';
+            try {
+                const parentResp = await fetch(`${API_BASE_URL}/practice/parent/children`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                if (!parentResp.ok) throw new Error('無法取得兒童列表');
+                const parentData = await parentResp.json();
+
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                const startDate = thirtyDaysAgo.toISOString().split('T')[0];
+
+                // 逐一取得每位兒童的已批准紀錄
+                const childGroups = [];
+                for (const child of parentData.children) {
+                    const resp = await fetch(
+                        `${API_BASE_URL}/practice/records/${child.id}?status=approved&start_date=${startDate}`,
+                        { headers: { 'Authorization': `Bearer ${currentToken}` } }
+                    );
+                    if (!resp.ok) continue;
+                    const data = await resp.json();
+                    if (data.records.length > 0) {
+                        childGroups.push({ child, records: data.records });
+                    }
+                }
+
+                if (childGroups.length === 0) {
+                    container.innerHTML = '<p style="text-align:center;color:var(--text-subdued);padding:20px;">過去 30 天內沒有已批准的練琴紀錄</p>';
+                    return;
+                }
+
+                container.innerHTML = childGroups.map(({ child, records }) => {
+                    const totalMinutes = records.reduce((sum, r) => sum + r.practice_minutes, 0);
+                    const recordRows = records.map(r => `
+                        <div class="approved-record-row">
+                            <span class="ar-date">${r.date}</span>
+                            <span class="ar-minutes">${r.practice_minutes} 分鐘</span>
+                            <span class="ar-note">${r.notes || ''}</span>
+                            <span class="ar-time">${r.approved_at ? new Date(r.approved_at).toLocaleDateString('zh-TW') : ''}</span>
+                        </div>
+                    `).join('');
+
+                    return `
+                        <div class="approved-child-group">
+                            <div class="approved-child-header">
+                                <span class="approved-child-name">👧 ${child.name}</span>
+                                <span class="approved-child-total">共 ${totalMinutes} 分鐘 · ${records.length} 筆</span>
+                            </div>
+                            <div class="approved-record-table">
+                                <div class="approved-record-row header">
+                                    <span class="ar-date">日期</span>
+                                    <span class="ar-minutes">練琴時間</span>
+                                    <span class="ar-note">備註</span>
+                                    <span class="ar-time">批准日期</span>
+                                </div>
+                                ${recordRows}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                container.innerHTML = `<p style="color:var(--danger)">載入失敗：${error.message}</p>`;
+            }
+        }
+
         // 顯示待批準的記錄
         function displayPendingRecords(records) {
             const container = document.getElementById('pendingRecordsContainer');
@@ -1391,7 +1589,7 @@
 
                 const data = await response.json();
                 console.log('✅ 記錄已批準:', data);
-                showSuccess(`✓ 記錄已批准！孩子獲得 ${data.game_minutes_earned} 分鐘遊戲時間`);
+                showSuccess(`✓ 記錄已批准！孩子獲得 ${data.game_minutes_earned} 點練琴獎勵點數`);
                 
                 // 重新加載待批準記錄
                 loadPendingRecords();
@@ -1469,7 +1667,7 @@
             const container = document.getElementById('gameRequestsReviewContainer');
             
             if (requests.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #999;">暫無遊戲時間申請記錄</p>';
+                container.innerHTML = '<p style="text-align: center; color: #999;">暫無獎勵點數申請記錄</p>';
                 return;
             }
 
@@ -1484,7 +1682,7 @@
                         </div>
                     </div>
                     <div class="record-details">
-                        <div>🎮 申請遊戲時間: ${request.game_minutes} 分鐘</div>
+                        <div>🎮 申請獎勵點數: ${request.game_minutes} 點</div>
                         <div>狀態: <span style="color: #28a745; font-weight: 600;">${request.status === 'approved' ? '✓ 已批准' : request.status}</span></div>
                     </div>
                     <div style="padding-top: 10px; border-top: 1px solid #eee; margin-top: 10px;">
@@ -1497,19 +1695,19 @@
 
         // 修改遊戲申請額度
         async function modifyGameRequest(childId, requestId, action) {
-            const minutes = prompt(`請輸入要${action === 'add' ? '增加' : '減少'}的遊戲時間(分鐘):\n(必須是15的倍數)`);
+            const minutes = prompt(`請輸入要${action === 'add' ? '增加' : '減少'}的獎勵點數:\n(必須是15的倍數)`);
             
             if (!minutes || isNaN(minutes)) return;
             
             const numMinutes = parseInt(minutes);
             if (numMinutes % 15 !== 0) {
-                showError('遊戲時間必須是15分鐘的倍數');
+                showError('獎勵點數必須是15的倍數');
                 return;
             }
 
             try {
                 // 這裡可以調用API來修改額度，目前先顯示提示
-                showSuccess(`${action === 'add' ? '已增加' : '已減少'} ${numMinutes} 分鐘的遊戲時間`);
+                showSuccess(`${action === 'add' ? '已增加' : '已減少'} ${numMinutes} 點的獎勵點數`);
                 loadParentGameRequests();
 
             } catch (error) {
@@ -1519,17 +1717,17 @@
 
         // 顯示獎勵遊戲時間對話框
         function showRewardDialog(childId, childName) {
-            const minutes = prompt(`請輸入要獎勵給 ${childName} 的遊戲時間(分鐘):\n(必須是15的倍數)\n\n例如: 15, 30, 45, 60`);
+            const minutes = prompt(`請輸入要獎勵給 ${childName} 的練琴獎勵點數:\n(必須是15的倍數)\n\n例如: 15, 30, 45, 60`);
             
             if (!minutes || isNaN(minutes)) return;
             
             const numMinutes = parseInt(minutes);
             if (numMinutes <= 0) {
-                showError('遊戲時間必須大於0');
+                showError('獎勵點數必須大於0');
                 return;
             }
             if (numMinutes % 15 !== 0) {
-                showError('遊戲時間必須是15分鐘的倍數');
+                showError('獎勵點數必須是15的倍數');
                 return;
             }
 
@@ -1561,7 +1759,7 @@
 
                 const data = await response.json();
                 console.log('🎁 遊戲時間已獎勵:', data);
-                showSuccess(`✓ 已獎勵 ${childName} ${minutes} 分鐘遊戲時間！\n原因: ${reason}\n新餘額: ${data.new_balance} 分鐘`);
+                showSuccess(`✓ 已獎勵 ${childName} ${minutes} 點練琴獎勵點數！\n原因: ${reason}\n新餘額: ${data.new_balance} 點`);
                 
                 // 重新加載家長儀表板
                 loadParentDashboard(currentUserId);
@@ -1820,7 +2018,6 @@
             
             loadPracticeRecords(childId);
             loadGameBalance(childId);
-            loadGameRequestHistory(childId);
         }
 
         // 切換標籤
@@ -1842,9 +2039,11 @@
             if (tabName === 'practice-history') {
                 loadPracticeRecords(currentUserId);
             } else if (tabName === 'request-game') {
-                loadGameRequestHistory(currentUserId);
-            } else if (tabName === 'game-balance') {
-                loadGameBalance(currentUserId);
+                loadRatioInfo();
+            } else if (tabName === 'reward-history') {
+                loadRewardHistory(currentUserId);
+            } else if (tabName === 'approved-records') {
+                loadApprovedRecords();
             } else if (tabName === 'manage-children') {
                 loadManageChildren();
             }
@@ -2030,76 +2229,76 @@
                 }
 
                 const data = await response.json();
-                showSuccess(`申請成功！已扣除 ${data.game_minutes_used} 分鐘，剩餘 ${data.remaining_balance} 分鐘`);
-                document.getElementById('gameMinutes').value = '';
+                showSuccess(`申請成功！已扣除 ${data.game_minutes_used} 點，剩餘 ${data.remaining_balance} 點`);
+                document.getElementById('gameMinutes').value = '15';
                 loadGameBalance(currentUserId);
-                loadGameRequestHistory(currentUserId);
             } catch (error) {
                 showError('申請遊戲時間失敗: ' + error.message);
             }
         }
 
-        // 加載遊戲時間餘額
+        // 加載遊戲時間餘額（並同步更新 header 點數）
         async function loadGameBalance(childId) {
             try {
                 if (!currentToken) return;
-
                 const response = await fetch(`${API_BASE_URL}/awards/balance/${childId}`, {
                     headers: { 'Authorization': `Bearer ${currentToken}` }
                 });
-
                 if (!response.ok) throw new Error('加載失敗');
-
                 const data = await response.json();
-                document.getElementById('gameBalanceValue').textContent = data.game_balance;
-
-                // 加載兌換比例
-                const ratioResponse = await fetch(`${API_BASE_URL}/awards/ratio`, {
-                    headers: { 'Authorization': `Bearer ${currentToken}` }
-                });
-                
-                if (ratioResponse.ok) {
-                    const ratioData = await ratioResponse.json();
-                    document.getElementById('ratioInfo').textContent = 
-                        `${ratioData.description}`;
-                }
+                document.getElementById('headerBalanceValue').textContent = data.game_balance;
             } catch (error) {
                 console.error('加載遊戲時間餘額失敗:', error);
             }
         }
 
-        // 加載遊戲時間申請歷史
-        async function loadGameRequestHistory(childId) {
+        // 加載兌換比例說明
+        async function loadRatioInfo() {
             try {
                 if (!currentToken) return;
+                const response = await fetch(`${API_BASE_URL}/awards/ratio`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                if (!response.ok) return;
+                const data = await response.json();
+                document.getElementById('ratioInfo').textContent = data.description;
+            } catch (error) {
+                console.error('加載兌換比例失敗:', error);
+            }
+        }
 
+        // 加載獎勵兌換紀錄
+        async function loadRewardHistory(childId) {
+            const list = document.getElementById('rewardHistoryList');
+            list.innerHTML = '<p style="text-align:center;color:var(--text-subdued);">載入中...</p>';
+            try {
+                if (!currentToken) return;
                 const response = await fetch(`${API_BASE_URL}/awards/request-history/${childId}`, {
                     headers: { 'Authorization': `Bearer ${currentToken}` }
                 });
-
                 if (!response.ok) throw new Error('加載失敗');
-
                 const data = await response.json();
-                const list = document.getElementById('gameRequestsList');
-                
+
                 if (!data.requests || data.requests.length === 0) {
-                    list.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">暫無申請歷史</p>';
+                    list.innerHTML = '<p style="color:var(--text-subdued);text-align:center;padding:20px;">尚無兌換紀錄</p>';
                     return;
                 }
 
                 list.innerHTML = data.requests.map(r => `
                     <div class="record-item">
                         <div class="record-header">
-                            <div class="record-date">${new Date(r.request_date).toLocaleString('zh-TW')}</div>
-                            <div class="record-status approved">已批准</div>
-                        </div>
-                        <div class="record-details">
-                            <div>⏱️ 使用時間: ${r.game_minutes} 分鐘</div>
+                            <div>
+                                <div class="record-date">🎮 兌換遊戲時間</div>
+                                <div style="font-size:12px;color:var(--text-subdued);margin-top:3px;">
+                                    ${new Date(r.request_date).toLocaleString('zh-TW')}
+                                </div>
+                            </div>
+                            <div class="reward-cost-badge">− ${r.game_minutes} 點</div>
                         </div>
                     </div>
                 `).join('');
             } catch (error) {
-                console.error('加載申請歷史失敗:', error);
+                list.innerHTML = `<p style="color:var(--danger)">載入失敗：${error.message}</p>`;
             }
         }
 
