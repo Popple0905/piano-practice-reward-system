@@ -248,7 +248,7 @@ def get_practice_to_game_ratio():
     
     return jsonify({
         'practice_to_game_ratio': parent.practice_to_game_ratio,
-        'description': f'1分鐘練琴兌換{parent.practice_to_game_ratio}分鐘遊戲時間'
+        'description': f'1分鐘練琴兌換{int(parent.practice_to_game_ratio) if parent.practice_to_game_ratio == int(parent.practice_to_game_ratio) else parent.practice_to_game_ratio}分鐘遊戲時間'
     }), 200
 
 @awards_bp.route('/ratio', methods=['POST'])
@@ -277,6 +277,6 @@ def set_practice_to_game_ratio():
     return jsonify({
         'message': '兑换比例已更新',
         'new_ratio': parent.practice_to_game_ratio,
-        'description': f'1分鐘練琴兌換{parent.practice_to_game_ratio}分鐘遊戲時間'
+        'description': f'1分鐘練琴兌換{int(parent.practice_to_game_ratio) if parent.practice_to_game_ratio == int(parent.practice_to_game_ratio) else parent.practice_to_game_ratio}分鐘遊戲時間'
     }), 200
 

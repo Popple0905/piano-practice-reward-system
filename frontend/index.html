@@ -155,6 +155,27 @@
             transform: translateY(0);
         }
 
+        .remember-row {
+            margin-top: -5px;
+            margin-bottom: 5px;
+        }
+
+        .remember-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #666;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .remember-label input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
         .error-message {
             background: #fee;
             color: #c33;
@@ -565,44 +586,6 @@
             border-color: #d32f2f;
         }
 
-        .test-results {
-            background: white;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 30px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .test-results h3 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 16px;
-        }
-
-        .test-item {
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            font-size: 13px;
-            font-family: 'Courier New', monospace;
-        }
-
-        .test-item.success {
-            background: #efe;
-            color: #3c3;
-        }
-
-        .test-item.error {
-            background: #fee;
-            color: #c33;
-        }
-
-        .test-item.info {
-            background: #eef;
-            color: #33c;
-        }
 
         .manage-child-card {
             background: white;
@@ -735,11 +718,16 @@
                 <div id="parentForm">
                     <div class="form-group">
                         <label for="parentUsername">用戶名</label>
-                        <input type="text" id="parentUsername" placeholder="輸入用戶名" value="testparent">
+                        <input type="text" id="parentUsername" placeholder="輸入用戶名" autocomplete="username">
                     </div>
                     <div class="form-group">
                         <label for="parentPassword">密碼</label>
-                        <input type="password" id="parentPassword" placeholder="輸入密碼" value="parent123">
+                        <input type="password" id="parentPassword" placeholder="輸入密碼" autocomplete="current-password">
+                    </div>
+                    <div class="form-group remember-row">
+                        <label class="remember-label">
+                            <input type="checkbox" id="parentRemember"> 記住帳號
+                        </label>
                     </div>
                 </div>
 
@@ -747,11 +735,16 @@
                 <div id="childForm" style="display: none;">
                     <div class="form-group">
                         <label for="childId">孩子 ID</label>
-                        <input type="text" id="childId" placeholder="輸入孩子ID（英文或數字）" value="1" autocapitalize="none" autocorrect="off" autocomplete="off">
+                        <input type="text" id="childId" placeholder="輸入孩子ID（英文或數字）" autocapitalize="none" autocorrect="off" autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label for="childPassword">密碼</label>
-                        <input type="password" id="childPassword" placeholder="輸入密碼" value="child123">
+                        <input type="password" id="childPassword" placeholder="輸入密碼" autocomplete="current-password">
+                    </div>
+                    <div class="form-group remember-row">
+                        <label class="remember-label">
+                            <input type="checkbox" id="childRemember"> 記住帳號
+                        </label>
                     </div>
                 </div>
 
@@ -786,8 +779,6 @@
                 </div>
 
                 <div class="action-buttons">
-                    <button class="action-btn" onclick="testGetBalance()">查詢遊戲餘額</button>
-                    <button class="action-btn" onclick="testGetRecords()">查詢練琴記錄</button>
                     <button class="action-btn logout" onclick="handleLogout()">登出</button>
                 </div>
 
@@ -967,7 +958,7 @@
                     </div>
                 </div>
 
-                <div class="test-results" id="testResults"></div>
+
             </div>
         </div>
     </div>
@@ -1029,11 +1020,28 @@
         }
 
         // 登入處理
+        // 頁面載入時從 localStorage 恢復已記住的帳號
+        function loadRememberedCredentials() {
+            const parentSaved = JSON.parse(localStorage.getItem('parent_remember') || 'null');
+            if (parentSaved) {
+                document.getElementById('parentUsername').value = parentSaved.username || '';
+                document.getElementById('parentPassword').value = parentSaved.password || '';
+                document.getElementById('parentRemember').checked = true;
+            }
+            const childSaved = JSON.parse(localStorage.getItem('child_remember') || 'null');
+            if (childSaved) {
+                document.getElementById('childId').value = childSaved.childId || '';
+                document.getElementById('childPassword').value = childSaved.password || '';
+                document.getElementById('childRemember').checked = true;
+            }
+        }
+        loadRememberedCredentials();
+
         async function handleLogin() {
             try {
                 const loginBtn = document.getElementById('loginBtn');
                 const loading = document.getElementById('loading');
-                
+
                 loginBtn.disabled = true;
                 loading.style.display = 'block';
                 clearMessages();
@@ -1049,6 +1057,13 @@
                         throw new Error('請輸入用戶名和密碼');
                     }
 
+                    // 記住帳號
+                    if (document.getElementById('parentRemember').checked) {
+                        localStorage.setItem('parent_remember', JSON.stringify({ username, password }));
+                    } else {
+                        localStorage.removeItem('parent_remember');
+                    }
+
                     payload = { username, password };
                     endpoint = `${API_BASE_URL}/auth/parent/login`;
                 } else {
@@ -1057,6 +1072,13 @@
 
                     if (!childId || !password) {
                         throw new Error('請輸入孩子ID和密碼');
+                    }
+
+                    // 記住帳號
+                    if (document.getElementById('childRemember').checked) {
+                        localStorage.setItem('child_remember', JSON.stringify({ childId, password }));
+                    } else {
+                        localStorage.removeItem('child_remember');
                     }
 
                     payload = { child_id: childId, password };
@@ -2065,86 +2087,7 @@
             showSuccess('已登出');
         }
 
-        // 清除測試結果
-        function clearTestResults() {
-            document.getElementById('testResults').innerHTML = '';
-        }
 
-        // 添加測試結果
-        function addTestResult(message, type = 'info') {
-            const resultsDiv = document.getElementById('testResults');
-            const item = document.createElement('div');
-            item.className = `test-item ${type}`;
-            item.textContent = message;
-            resultsDiv.appendChild(item);
-            resultsDiv.scrollTop = resultsDiv.scrollHeight;
-        }
-
-        // 測試：查詢遊戲餘額
-        async function testGetBalance() {
-            try {
-                if (!currentToken || !currentUserId) {
-                    throw new Error('未登入');
-                }
-
-                clearTestResults();
-                addTestResult('正在查詢遊戲餘額...', 'info');
-
-                const response = await fetch(`${API_BASE_URL}/awards/balance/${currentUserId}`, {
-                    method: 'GET',
-                    headers: { Authorization: `Bearer ${currentToken}` }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                const data = await response.json();
-                addTestResult(`✅ 成功！`, 'success');
-                addTestResult(`孩子名稱: ${data.child_name}`, 'info');
-                addTestResult(`遊戲餘額: ${data.game_balance} 分鐘`, 'info');
-
-            } catch (error) {
-                addTestResult(`❌ 失敗: ${error.message}`, 'error');
-            }
-        }
-
-        // 測試：查詢練琴記錄
-        async function testGetRecords() {
-            try {
-                if (!currentToken || !currentUserId) {
-                    throw new Error('未登入');
-                }
-
-                clearTestResults();
-                addTestResult('正在查詢練琴記錄...', 'info');
-
-                const response = await fetch(`${API_BASE_URL}/practice/records/${currentUserId}`, {
-                    method: 'GET',
-                    headers: { Authorization: `Bearer ${currentToken}` }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                const data = await response.json();
-                addTestResult(`✅ 成功！`, 'success');
-                addTestResult(`孩子名稱: ${data.child_name}`, 'info');
-                addTestResult(`總記錄數: ${data.total_records}`, 'info');
-                addTestResult(`總練琴時間: ${data.total_minutes} 分鐘`, 'info');
-
-                if (data.records && data.records.length > 0) {
-                    addTestResult(`最近的記錄:`, 'info');
-                    data.records.forEach(record => {
-                        addTestResult(`  - ${record.date}: ${record.practice_minutes}分鐘 (${record.notes})`, 'info');
-                    });
-                }
-
-            } catch (error) {
-                addTestResult(`❌ 失敗: ${error.message}`, 'error');
-            }
-        }
     </script>
 </body>
 </html>
