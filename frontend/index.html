@@ -1,0 +1,2086 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎹 練琴獎勵系統 - 登入</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            min-height: 600px;
+        }
+
+        .welcome-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .welcome-section h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .welcome-section p {
+            font-size: 18px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .piano-icon {
+            font-size: 80px;
+            margin-bottom: 30px;
+        }
+
+        .login-section {
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .login-section h2 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .user-type {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .user-type-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #666;
+        }
+
+        .user-type-btn:hover {
+            border-color: #667eea;
+        }
+
+        .user-type-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .success-message {
+            background: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .dashboard {
+            display: none;
+        }
+
+        .dashboard.active {
+            display: block;
+        }
+
+        .login-form {
+            display: block;
+        }
+
+        .login-form.hidden {
+            display: none;
+        }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 30px;
+            border-radius: 10px;
+        }
+
+        .dashboard-header h2 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .user-info {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .info-value {
+            color: #333;
+            word-break: break-all;
+            max-width: 60%;
+            text-align: right;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            padding: 12px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .nav-tab:hover {
+            color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-section {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .form-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .submit-btn {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .record-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .record-date {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .record-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .record-status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .record-status.approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .record-status.rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .record-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .child-card {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .child-card:hover {
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .child-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .child-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .child-age {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .child-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .child-stat-item {
+            text-align: center;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+
+        .child-stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .child-stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 3px;
+        }
+
+        .record-action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .record-action-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .record-action-btn.approve {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #28a745;
+        }
+
+        .record-action-btn.approve:hover {
+            background: #28a745;
+            color: white;
+        }
+
+        .record-action-btn.reject {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #dc3545;
+        }
+
+        .record-action-btn.reject:hover {
+            background: #dc3545;
+            color: white;
+        }
+
+        .stat-box {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .action-btn {
+            padding: 12px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .action-btn.logout {
+            grid-column: span 2;
+            background: #f44336;
+            color: white;
+            border-color: #f44336;
+        }
+
+        .action-btn.logout:hover {
+            background: #d32f2f;
+            border-color: #d32f2f;
+        }
+
+        .test-results {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .test-results h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .test-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .test-item.success {
+            background: #efe;
+            color: #3c3;
+        }
+
+        .test-item.error {
+            background: #fee;
+            color: #c33;
+        }
+
+        .test-item.info {
+            background: #eef;
+            color: #33c;
+        }
+
+        .manage-child-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .manage-child-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .manage-child-info {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .manage-child-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .manage-btn {
+            padding: 7px 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .manage-btn.rename {
+            background: #e3f2fd;
+            color: #1565c0;
+            border: 1px solid #1565c0;
+        }
+
+        .manage-btn.rename:hover {
+            background: #1565c0;
+            color: white;
+        }
+
+        .manage-btn.password {
+            background: #fff3e0;
+            color: #e65100;
+            border: 1px solid #e65100;
+        }
+
+        .manage-btn.password:hover {
+            background: #e65100;
+            color: white;
+        }
+
+        .manage-btn.delete {
+            background: #ffebee;
+            color: #b71c1c;
+            border: 1px solid #b71c1c;
+        }
+
+        .manage-btn.delete:hover {
+            background: #b71c1c;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+                min-height: auto;
+            }
+
+            .welcome-section {
+                padding: 40px 30px;
+            }
+
+            .login-section {
+                padding: 40px 30px;
+            }
+
+            .welcome-section h1 {
+                font-size: 36px;
+            }
+
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .action-btn.logout {
+                grid-column: span 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 歡迎部分 -->
+        <div class="welcome-section">
+            <div class="piano-icon">🎹</div>
+            <h1>練琴獎勵系統</h1>
+            <p>記錄每日練琴時間<br>
+            交換遊戲時間獎勵</p>
+        </div>
+
+        <!-- 登入部分 -->
+        <div class="login-section">
+            <h2>登入</h2>
+
+            <!-- 登入表單 -->
+            <div class="login-form" id="loginForm">
+                <div class="error-message" id="errorMessage"></div>
+                <div class="success-message" id="successMessage"></div>
+
+                <!-- 用戶類型選擇 -->
+                <div class="user-type">
+                    <button class="user-type-btn active" data-type="parent" onclick="selectUserType('parent')">
+                        👨‍👩‍👧 家長
+                    </button>
+                    <button class="user-type-btn" data-type="child" onclick="selectUserType('child')">
+                        👧 孩子
+                    </button>
+                </div>
+
+                <!-- 家長登入表單 -->
+                <div id="parentForm">
+                    <div class="form-group">
+                        <label for="parentUsername">用戶名</label>
+                        <input type="text" id="parentUsername" placeholder="輸入用戶名" value="testparent">
+                    </div>
+                    <div class="form-group">
+                        <label for="parentPassword">密碼</label>
+                        <input type="password" id="parentPassword" placeholder="輸入密碼" value="parent123">
+                    </div>
+                </div>
+
+                <!-- 孩子登入表單 -->
+                <div id="childForm" style="display: none;">
+                    <div class="form-group">
+                        <label for="childId">孩子 ID</label>
+                        <input type="text" id="childId" placeholder="輸入孩子ID（英文或數字）" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="childPassword">密碼</label>
+                        <input type="password" id="childPassword" placeholder="輸入密碼" value="child123">
+                    </div>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>正在登入...</p>
+                </div>
+
+                <button class="login-btn" onclick="handleLogin()" id="loginBtn">登入</button>
+            </div>
+
+            <!-- 儀表板 -->
+            <div class="dashboard" id="dashboard">
+                <div class="dashboard-header">
+                    <h2 id="dashboardTitle">登入成功！</h2>
+                    <p id="dashboardSubtitle"></p>
+                </div>
+
+                <div class="user-info">
+                    <div class="info-item">
+                        <span class="info-label">用戶類型：</span>
+                        <span class="info-value" id="userType"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">用戶ID：</span>
+                        <span class="info-value" id="userId"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">用戶名/名稱：</span>
+                        <span class="info-value" id="userName"></span>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="action-btn" onclick="testGetBalance()">查詢遊戲餘額</button>
+                    <button class="action-btn" onclick="testGetRecords()">查詢練琴記錄</button>
+                    <button class="action-btn logout" onclick="handleLogout()">登出</button>
+                </div>
+
+                <!-- 家長導航 -->
+                <div id="parentNav" style="display: none;">
+                    <div class="nav-tabs">
+                        <button class="nav-tab active" onclick="switchTab('children-list')">👧 我的孩子</button>
+                        <button class="nav-tab" onclick="switchTab('pending-records')">⏳ 待批準記錄</button>
+                        <button class="nav-tab" onclick="switchTab('manage-children')">👤 管理兒童帳號</button>
+                    </div>
+
+                    <!-- 孩子列表 -->
+                    <div id="children-list" class="tab-content active">
+                        <div class="form-section">
+                            <h3>👧 我的孩子</h3>
+                            <div id="childrenListContainer" style="margin-top: 20px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 待批準記錄 -->
+                    <div id="pending-records" class="tab-content">
+                        <div class="form-section">
+                            <h3>⏳ 待批準的練琴記錄</h3>
+                            <div id="pendingRecordsContainer" style="margin-top: 20px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 管理兒童帳號 -->
+                    <div id="manage-children" class="tab-content">
+                        <div class="form-section">
+                            <h3>➕ 新增兒童帳號</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="newChildId">帳號 ID（選填，留空自動分配）</label>
+                                    <input type="text" id="newChildId" placeholder="英文或數字，例如：kid01、101">
+                                </div>
+                                <div class="form-group">
+                                    <label for="newChildAge">年齡（選填）</label>
+                                    <input type="number" id="newChildAge" placeholder="輸入年齡" min="1" max="18">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="newChildName">姓名</label>
+                                    <input type="text" id="newChildName" placeholder="輸入孩子姓名">
+                                </div>
+                                <div class="form-group">
+                                    <label for="newChildPassword">密碼</label>
+                                    <input type="password" id="newChildPassword" placeholder="設定登入密碼">
+                                </div>
+                            </div>
+                            <button class="submit-btn" onclick="addChildAccount()">新增帳號</button>
+                            <div id="addChildResult" style="margin-top: 15px;"></div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>👧 現有兒童帳號</h3>
+                            <div id="manageChildrenList" style="margin-top: 15px;"></div>
+                        </div>
+                    </div>
+
+                    </div>
+                </div>
+
+                <!-- 孩子端導航標籤 -->
+                <div id="childNav" style="display: none;">
+                    <div class="nav-tabs">
+                        <button class="nav-tab active" onclick="switchTab('log-practice')">📝 登錄練琴</button>
+                        <button class="nav-tab" onclick="switchTab('practice-history')">📋 練琴紀錄</button>
+                        <button class="nav-tab" onclick="switchTab('request-game')">🎮 申請遊戲時間</button>
+                        <button class="nav-tab" onclick="switchTab('game-balance')">⏱️遊戲時間</button>
+                    </div>
+
+                    <!-- 登錄練琴時間 -->
+                    <div id="log-practice" class="tab-content active">
+                        <div class="form-section">
+                            <h3>📝 登錄今日練琴時間</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="practiceDate">日期</label>
+                                    <input type="date" id="practiceDate">
+                                </div>
+                                <div class="form-group">
+                                    <label for="practiceTime">時間 (五分鐘單位)</label>
+                                    <input type="time" id="practiceTime" step="300">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="practiceMinutes">練琴時間 (5分鐘單位)</label>
+                                    <input type="number" id="practiceMinutes" placeholder="例: 30" min="5" step="5">
+                                </div>
+                            </div>
+                            <div class="form-row full">
+                                <div class="form-group">
+                                    <label for="practiceNotes">備註 (練習內容等)</label>
+                                    <textarea id="practiceNotes" placeholder="記錄今天練習的曲目和內容..."></textarea>
+                                </div>
+                            </div>
+                            <button class="submit-btn" onclick="submitPracticeRecord()">提交練琴記錄</button>
+                        </div>
+                        <div id="submitPracticeResult"></div>
+                    </div>
+
+                    <!-- 練琴紀錄 -->
+                    <div id="practice-history" class="tab-content">
+                        <div class="form-section">
+                            <h3>📋 我的練琴紀錄</h3>
+                            <div id="practiceRecordsList" style="margin-top: 20px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 申請遊戲時間 -->
+                    <div id="request-game" class="tab-content">
+                        <div class="form-section">
+                            <h3>🎮 申請遊戲時間</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="gameMinutes">申請時間 (15分鐘單位)</label>
+                                    <input type="number" id="gameMinutes" placeholder="例: 30" min="15" step="15" value="15">
+                                </div>
+                            </div>
+                            <button class="submit-btn" onclick="requestGameTime()">申請遊戲時間</button>
+                        </div>
+                        <div id="requestGameResult"></div>
+                        
+                        <div class="form-section" style="margin-top: 30px;">
+                            <h3>📊 申請紀錄</h3>
+                            <div id="gameRequestsList" style="margin-top: 20px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 遊戲時間 -->
+                    <div id="game-balance" class="tab-content">
+                        <div class="stat-box">
+                            <div class="stat-value" id="gameBalanceValue">0</div>
+                            <div class="stat-label">遊戲時間餘額 (分鐘)</div>
+                        </div>
+                        
+                        <div class="form-section">
+                            <h3>ℹ️ 兌換比例</h3>
+                            <div id="ratioInfo" style="padding: 15px; background: white; border-radius: 8px; color: #666;"></div>
+                        </div>
+
+                        <div class="form-section" style="margin-top: 30px;">
+                            <h3>📈 遊戲時間統計</h3>
+                            <div id="gameStats" style="margin-top: 15px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="test-results" id="testResults"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api';
+        let currentUserType = 'parent';
+        let currentToken = null;
+        let currentUserId = null;
+
+        // 選擇用戶類型
+        function selectUserType(type) {
+            currentUserType = type;
+            
+            // 更新按鈕樣式
+            document.querySelectorAll('.user-type-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-type="${type}"]`).classList.add('active');
+
+            // 切換表單
+            if (type === 'parent') {
+                document.getElementById('parentForm').style.display = 'block';
+                document.getElementById('childForm').style.display = 'none';
+            } else {
+                document.getElementById('parentForm').style.display = 'none';
+                document.getElementById('childForm').style.display = 'block';
+            }
+
+            // 清除錯誤消息
+            clearMessages();
+        }
+
+        // 顯示錯誤消息
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            clearMessages();
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // 顯示成功消息
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // 清除消息
+        function clearMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        // 登入處理
+        async function handleLogin() {
+            try {
+                const loginBtn = document.getElementById('loginBtn');
+                const loading = document.getElementById('loading');
+                
+                loginBtn.disabled = true;
+                loading.style.display = 'block';
+                clearMessages();
+
+                let payload;
+                let endpoint;
+
+                if (currentUserType === 'parent') {
+                    const username = document.getElementById('parentUsername').value;
+                    const password = document.getElementById('parentPassword').value;
+
+                    if (!username || !password) {
+                        throw new Error('請輸入用戶名和密碼');
+                    }
+
+                    payload = { username, password };
+                    endpoint = `${API_BASE_URL}/auth/parent/login`;
+                } else {
+                    const childId = document.getElementById('childId').value;
+                    const password = document.getElementById('childPassword').value;
+
+                    if (!childId || !password) {
+                        throw new Error('請輸入孩子ID和密碼');
+                    }
+
+                    payload = { child_id: childId, password };
+                    endpoint = `${API_BASE_URL}/auth/child/login`;
+                }
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '登入失敗');
+                }
+
+                const data = await response.json();
+                
+                // 保存 Token 和用戶信息
+                currentToken = data.access_token;
+                
+                if (currentUserType === 'parent') {
+                    currentUserId = data.parent_id;
+                    displayDashboard(
+                        '👨‍👩‍👧 家長',
+                        data.parent_id,
+                        data.username,
+                        data.access_token
+                    );
+                } else {
+                    currentUserId = data.child_id;
+                    displayDashboard(
+                        '👧 孩子',
+                        data.child_id,
+                        data.name,
+                        data.access_token
+                    );
+                }
+
+                showSuccess('登入成功！');
+
+            } catch (error) {
+                showError('登入失敗: ' + error.message);
+            } finally {
+                document.getElementById('loginBtn').disabled = false;
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // 顯示儀表板
+        function displayDashboard(userType, userId, userName, token) {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('dashboard').classList.add('active');
+
+            document.getElementById('dashboardTitle').textContent = `歡迎，${userName}！`;
+            document.getElementById('dashboardSubtitle').textContent = userType;
+            document.getElementById('userType').textContent = userType;
+            document.getElementById('userId').textContent = userId;
+            document.getElementById('userName').textContent = userName;
+
+            // 如果是孩子，初始化孩子端功能
+            if (userType.includes('孩子')) {
+                document.getElementById('childNav').style.display = 'block';
+                loadChildDashboard(userId);
+            } else if (userType.includes('家長')) {
+                document.getElementById('parentNav').style.display = 'block';
+                loadParentDashboard(userId);
+            }
+
+            clearTestResults();
+        }
+
+        // 加載家長端儀表板
+        async function loadParentDashboard(parentId) {
+            try {
+                // 第一步：獲取家長的所有孩子列表
+                const response = await fetch(`${API_BASE_URL}/practice/parent/children`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('無法獲取孩子列表');
+                }
+
+                const data = await response.json();
+                console.log('👨‍👩‍👧 家長孩子列表:', data);
+
+                // 顯示孩子列表
+                displayChildrenList(data.children);
+                
+                // 加載待批準的記錄
+                loadPendingRecords();
+                
+                // 加載遊戲時間申請
+                loadParentGameRequests();
+
+            } catch (error) {
+                showError('加載家長儀表板失敗: ' + error.message);
+            }
+        }
+
+        // 顯示孩子列表
+        function displayChildrenList(children) {
+            const container = document.getElementById('childrenListContainer');
+            
+            if (children.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999;">暫無孩子信息</p>';
+                return;
+            }
+
+            container.innerHTML = children.map(child => `
+                <div class="child-card" onclick="selectChildForParent(${child.id}, '${child.name}')">
+                    <div class="child-card-header">
+                        <div>
+                            <div class="child-name">👧 ${child.name}</div>
+                            <div class="child-age">年齡: ${child.age || '未設置'}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 18px; font-weight: 600; color: #667eea;">${child.game_balance} 分鐘</div>
+                            <div style="font-size: 12px; color: #999;">遊戲時間</div>
+                        </div>
+                    </div>
+                    <div class="child-stats">
+                        <div class="child-stat-item">
+                            <div class="child-stat-value">${child.pending_records}</div>
+                            <div class="child-stat-label">待批準</div>
+                        </div>
+                        <div class="child-stat-item">
+                            <div class="child-stat-value">${child.total_practice_minutes_past_30_days}</div>
+                            <div class="child-stat-label">30天練琴(分)</div>
+                        </div>
+                        <div class="child-stat-item">
+                            <div class="child-stat-value">${child.practice_records_count}</div>
+                            <div class="child-stat-label">總記錄</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                        <button class="submit-btn" style="width: 100%; background: #28a745;" onclick="event.stopPropagation(); showRewardDialog(${child.id}, '${child.name}')">
+                            🎁 獎勵遊戲時間
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 家長選擇孩子
+        async function selectChildForParent(childId, childName) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/practice/records/${childId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('無法獲取孩子的記錄');
+                }
+
+                const data = await response.json();
+                console.log(`📋 ${childName} 的練琴記錄:`, data);
+
+                // 建立一個模態框或展開式面板來顯示孩子的詳細信息
+                alert(`${childName} 的練琴記錄:\n待批準: ${data.pending_records}\n已批准: ${data.approved_records}\n總計: ${data.total_records}`);
+
+            } catch (error) {
+                showError('無法加載孩子的記錄: ' + error.message);
+            }
+        }
+
+        // 加載待批準的記錄
+        async function loadPendingRecords() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/practice/parent/children`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('無法獲取待批準的記錄');
+                }
+
+                const parentData = await response.json();
+                let allPendingRecords = [];
+
+                // 收集所有孩子的待批準記錄
+                for (const child of parentData.children) {
+                    const recordResponse = await fetch(`${API_BASE_URL}/practice/records/${child.id}?status=pending`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${currentToken}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (recordResponse.ok) {
+                        const recordData = await recordResponse.json();
+                        recordData.records.forEach(record => {
+                            record.child_name = child.name;
+                        });
+                        allPendingRecords = allPendingRecords.concat(recordData.records);
+                    }
+                }
+
+                console.log('📊 所有待批準記錄:', allPendingRecords);
+                displayPendingRecords(allPendingRecords);
+
+            } catch (error) {
+                showError('加載待批準記錄失敗: ' + error.message);
+            }
+        }
+
+        // 顯示待批準的記錄
+        function displayPendingRecords(records) {
+            const container = document.getElementById('pendingRecordsContainer');
+            
+            if (records.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999;">暫無待批準的記錄</p>';
+                return;
+            }
+
+            container.innerHTML = records.map(record => `
+                <div class="record-item">
+                    <div class="record-header">
+                        <div>
+                            <div class="record-date">👧 ${record.child_name} - ${record.date}</div>
+                            <div style="font-size: 13px; color: #999; margin-top: 3px;">
+                                時間: ${record.time ? record.time.substring(0, 5) : '未設置'} | 練琴: ${record.practice_minutes} 分鐘
+                            </div>
+                        </div>
+                        <div class="record-status pending">待批準</div>
+                    </div>
+                    <div class="record-details">
+                        <div>備註: ${record.notes || '無'}</div>
+                        <div>提交時間: ${record.created_at ? new Date(record.created_at).toLocaleString('zh-TW') : '未知'}</div>
+                    </div>
+                    <div class="record-action-buttons">
+                        <button class="record-action-btn approve" onclick="approveRecord(${record.id})">✓ 批準</button>
+                        <button class="record-action-btn reject" onclick="rejectRecord(${record.id})">✗ 拒絕</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 批準記錄
+        async function approveRecord(recordId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/practice/record/${recordId}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '批準失敗');
+                }
+
+                const data = await response.json();
+                console.log('✅ 記錄已批準:', data);
+                showSuccess(`✓ 記錄已批准！孩子獲得 ${data.game_minutes_earned} 分鐘遊戲時間`);
+                
+                // 重新加載待批準記錄
+                loadPendingRecords();
+                loadParentDashboard(currentUserId);
+
+            } catch (error) {
+                showError('批準失敗: ' + error.message);
+            }
+        }
+
+        // 拒絕記錄
+        async function rejectRecord(recordId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/practice/record/${recordId}/reject`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '拒絕失敗');
+                }
+
+                showSuccess('✗ 記錄已拒絕');
+                
+                // 重新加載待批準記錄
+                loadPendingRecords();
+                loadParentDashboard(currentUserId);
+
+            } catch (error) {
+                showError('拒絕失敗: ' + error.message);
+            }
+        }
+
+        // 加載家長的遊戲時間申請
+        async function loadParentGameRequests() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/practice/parent/children`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('無法獲取遊戲申請');
+                }
+
+                const parentData = await response.json();
+                const gameRequests = [];
+
+                // 收集所有孩子的遊戲申請記錄
+                for (const child of parentData.children) {
+                    child.game_requests.forEach(request => {
+                        request.child_name = child.name;
+                        request.child_id = child.id;
+                    });
+                    gameRequests.push(...child.game_requests);
+                }
+
+                console.log('🎮 遊戲時間申請:', gameRequests);
+                displayGameRequestsForParent(gameRequests);
+
+            } catch (error) {
+                console.error('加載遊戲申請失敗:', error.message);
+            }
+        }
+
+        // 顯示遊戲時間申請
+        function displayGameRequestsForParent(requests) {
+            const container = document.getElementById('gameRequestsReviewContainer');
+            
+            if (requests.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999;">暫無遊戲時間申請記錄</p>';
+                return;
+            }
+
+            container.innerHTML = requests.map(request => `
+                <div class="record-item">
+                    <div class="record-header">
+                        <div>
+                            <div class="record-date">👧 ${request.child_name} - ${new Date(request.request_date).toLocaleDateString('zh-TW')}</div>
+                            <div style="font-size: 13px; color: #999; margin-top: 3px;">
+                                申請時間：${new Date(request.request_date).toLocaleString('zh-TW')}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="record-details">
+                        <div>🎮 申請遊戲時間: ${request.game_minutes} 分鐘</div>
+                        <div>狀態: <span style="color: #28a745; font-weight: 600;">${request.status === 'approved' ? '✓ 已批准' : request.status}</span></div>
+                    </div>
+                    <div style="padding-top: 10px; border-top: 1px solid #eee; margin-top: 10px;">
+                        <button class="record-action-btn approve" onclick="modifyGameRequest(${request.child_id}, ${request.id}, 'add')">➕ 增加額度</button>
+                        <button class="record-action-btn reject" onclick="modifyGameRequest(${request.child_id}, ${request.id}, 'reduce')">➖ 減少額度</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 修改遊戲申請額度
+        async function modifyGameRequest(childId, requestId, action) {
+            const minutes = prompt(`請輸入要${action === 'add' ? '增加' : '減少'}的遊戲時間(分鐘):\n(必須是15的倍數)`);
+            
+            if (!minutes || isNaN(minutes)) return;
+            
+            const numMinutes = parseInt(minutes);
+            if (numMinutes % 15 !== 0) {
+                showError('遊戲時間必須是15分鐘的倍數');
+                return;
+            }
+
+            try {
+                // 這裡可以調用API來修改額度，目前先顯示提示
+                showSuccess(`${action === 'add' ? '已增加' : '已減少'} ${numMinutes} 分鐘的遊戲時間`);
+                loadParentGameRequests();
+
+            } catch (error) {
+                showError('修改失敗: ' + error.message);
+            }
+        }
+
+        // 顯示獎勵遊戲時間對話框
+        function showRewardDialog(childId, childName) {
+            const minutes = prompt(`請輸入要獎勵給 ${childName} 的遊戲時間(分鐘):\n(必須是15的倍數)\n\n例如: 15, 30, 45, 60`);
+            
+            if (!minutes || isNaN(minutes)) return;
+            
+            const numMinutes = parseInt(minutes);
+            if (numMinutes <= 0) {
+                showError('遊戲時間必須大於0');
+                return;
+            }
+            if (numMinutes % 15 !== 0) {
+                showError('遊戲時間必須是15分鐘的倍數');
+                return;
+            }
+
+            const reason = prompt(`請輸入獎勵原因(可選):\n例如: 表現良好、完成額外任務等`);
+            
+            rewardGameTime(childId, childName, numMinutes, reason || '家長獎勵');
+        }
+
+        // 獎勵遊戲時間
+        async function rewardGameTime(childId, childName, minutes, reason) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/awards/give`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        child_id: childId,
+                        game_minutes: minutes,
+                        reason: reason
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '獎勵失敗');
+                }
+
+                const data = await response.json();
+                console.log('🎁 遊戲時間已獎勵:', data);
+                showSuccess(`✓ 已獎勵 ${childName} ${minutes} 分鐘遊戲時間！\n原因: ${reason}\n新餘額: ${data.new_balance} 分鐘`);
+                
+                // 重新加載家長儀表板
+                loadParentDashboard(currentUserId);
+
+            } catch (error) {
+                showError('獎勵失敗: ' + error.message);
+            }
+        }
+
+        // ── 管理兒童帳號 ──────────────────────────────────────────
+
+        // 載入現有兒童帳號列表
+        async function loadManageChildren() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/practice/parent/children`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+
+                if (!response.ok) throw new Error('無法取得兒童列表');
+
+                const data = await response.json();
+                const container = document.getElementById('manageChildrenList');
+
+                if (data.children.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #999;">尚未建立任何兒童帳號</p>';
+                    return;
+                }
+
+                container.innerHTML = data.children.map(child => `
+                    <div class="manage-child-card">
+                        <div class="manage-child-header">
+                            <div class="child-name">👧 ${child.name}</div>
+                            <div style="font-size: 13px; color: #999;">ID: ${child.id}</div>
+                        </div>
+                        <div class="manage-child-info">
+                            年齡：${child.age || '未設置'} ｜ 遊戲餘額：${child.game_balance} 分鐘
+                        </div>
+                        <div class="manage-child-actions">
+                            <button class="manage-btn rename" onclick="renameChild(${child.id}, '${child.name.replace(/'/g, "\\'")}')">✏️ 修改名稱</button>
+                            <button class="manage-btn password" onclick="changeChildPassword(${child.id}, '${child.name.replace(/'/g, "\\'")}')">🔑 修改密碼</button>
+                            <button class="manage-btn delete" onclick="deleteChildAccount(${child.id}, '${child.name.replace(/'/g, "\\'")}')">🗑️ 刪除帳號</button>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                showError('載入兒童帳號失敗: ' + error.message);
+            }
+        }
+
+        // 新增兒童帳號
+        async function addChildAccount() {
+            const name = document.getElementById('newChildName').value.trim();
+            const password = document.getElementById('newChildPassword').value;
+            const age = document.getElementById('newChildAge').value;
+            const customId = document.getElementById('newChildId').value;
+            const resultDiv = document.getElementById('addChildResult');
+
+            if (!name) { showError('請輸入孩子姓名'); return; }
+            if (!password || password.length < 4) { showError('密碼至少需要 4 個字元'); return; }
+            if (customId && !/^[A-Za-z0-9]{1,20}$/.test(customId)) {
+                showError('ID 只能包含英文字母與數字，長度 1~20'); return;
+            }
+
+            try {
+                const body = { name, password };
+                if (age) body.age = parseInt(age);
+                if (customId) body.id = customId;
+
+                const response = await fetch(`${API_BASE_URL}/management/create-child`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '新增失敗');
+                }
+
+                const data = await response.json();
+                resultDiv.innerHTML = `<div style="background:#efe;color:#3a3;padding:10px;border-radius:6px;">
+                    ✅ 帳號已建立！孩子 ID：<strong>${data.child_id}</strong>，名稱：<strong>${data.name}</strong><br>
+                    <small>請記錄此 ID，孩子登入時需要使用</small>
+                </div>`;
+
+                // 清空表單
+                document.getElementById('newChildId').value = '';
+                document.getElementById('newChildName').value = '';
+                document.getElementById('newChildPassword').value = '';
+                document.getElementById('newChildAge').value = '';
+
+                // 重新載入列表
+                loadManageChildren();
+                loadParentDashboard(currentUserId);
+
+            } catch (error) {
+                resultDiv.innerHTML = `<div style="background:#fee;color:#c33;padding:10px;border-radius:6px;">❌ ${error.message}</div>`;
+            }
+        }
+
+        // 修改兒童名稱
+        async function renameChild(childId, currentName) {
+            const newName = prompt(`修改「${currentName}」的名稱：`, currentName);
+            if (!newName || newName.trim() === currentName) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/management/update-child-name/${childId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({ new_name: newName.trim() })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '修改失敗');
+                }
+
+                const data = await response.json();
+                showSuccess(`✅ 名稱已更新為「${data.child_name}」`);
+                loadManageChildren();
+                loadParentDashboard(currentUserId);
+
+            } catch (error) {
+                showError('修改名稱失敗: ' + error.message);
+            }
+        }
+
+        // 修改兒童密碼
+        async function changeChildPassword(childId, childName) {
+            const newPassword = prompt(`設定「${childName}」的新密碼：`);
+            if (!newPassword) return;
+            if (newPassword.length < 4) { showError('密碼至少需要 4 個字元'); return; }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/management/update-child-password/${childId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({ new_password: newPassword })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '修改失敗');
+                }
+
+                showSuccess(`✅「${childName}」的密碼已更新`);
+
+            } catch (error) {
+                showError('修改密碼失敗: ' + error.message);
+            }
+        }
+
+        // 刪除兒童帳號
+        async function deleteChildAccount(childId, childName) {
+            if (!confirm(`確定要刪除「${childName}」的帳號嗎？\n\n此操作將刪除該孩子所有的練琴記錄，且無法復原！`)) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/management/delete-child/${childId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '刪除失敗');
+                }
+
+                showSuccess(`✅「${childName}」的帳號已刪除`);
+                loadManageChildren();
+                loadParentDashboard(currentUserId);
+
+            } catch (error) {
+                showError('刪除帳號失敗: ' + error.message);
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────
+
+        // 加載孩子端儀表板
+        function loadChildDashboard(childId) {
+            const today = new Date();
+            document.getElementById('practiceDate').valueAsDate = today;
+            
+            // 設置預設時間為當前本地時間（四舍五入到最近的5分鐘倍數）
+            const now = new Date();
+            const minutes = Math.round(now.getMinutes() / 5) * 5;
+            let hours = now.getHours();
+            let roundedMinutes = minutes;
+            
+            // 處理舍入導致的小時變化
+            if (roundedMinutes >= 60) {
+                hours = (hours + 1) % 24;  // 處理午夜溢出
+                roundedMinutes = 0;
+            }
+            
+            const timeString = String(hours).padStart(2, '0') + ':' + String(roundedMinutes).padStart(2, '0');
+            document.getElementById('practiceTime').value = timeString;
+            
+            // 🔍 調試：顯示時間初始化信息
+            console.log('⏰ 時間初始化:', {
+                系統時間: now.toString(),
+                extractedHours: now.getHours(),
+                extractedMinutes: now.getMinutes(),
+                舍入後分鐘: roundedMinutes,
+                最終小時: hours,
+                時間輸入值: timeString,
+                時區偏移: now.getTimezoneOffset(),
+                本地時區: Intl.DateTimeFormat().resolvedOptions().timeZone
+            });
+            
+            loadPracticeRecords(childId);
+            loadGameBalance(childId);
+            loadGameRequestHistory(childId);
+        }
+
+        // 切換標籤
+        function switchTab(tabName) {
+            // 隱藏所有標籤內容
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            // 移除所有標籤的active類
+            document.querySelectorAll('.nav-tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // 顯示選中的標籤
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            // 根據標籤刷新數據
+            if (tabName === 'practice-history') {
+                loadPracticeRecords(currentUserId);
+            } else if (tabName === 'request-game') {
+                loadGameRequestHistory(currentUserId);
+            } else if (tabName === 'game-balance') {
+                loadGameBalance(currentUserId);
+            } else if (tabName === 'manage-children') {
+                loadManageChildren();
+            }
+        }
+
+        // 提交練琴記錄
+        async function submitPracticeRecord() {
+            try {
+                if (!currentToken) throw new Error('未登入');
+
+                const date = document.getElementById('practiceDate').value;
+                let time = document.getElementById('practiceTime').value;
+                const minutes = parseInt(document.getElementById('practiceMinutes').value);
+                const notes = document.getElementById('practiceNotes').value;
+
+                if (!date) throw new Error('請選擇日期');
+                if (!minutes || minutes < 5) throw new Error('練琴時間至少 5 分鐘');
+                if (minutes % 5 !== 0) throw new Error('練琴時間必須以 5 分鐘為單位');
+
+                // 驗證時間格式並四舍五入到5分鐘倍數
+                if (time) {
+                    const [hours, mins] = time.split(':').map(Number);
+                    const roundedMins = Math.round(mins / 5) * 5;
+                    const finalHours = roundedMins === 60 ? hours + 1 : hours;
+                    const finalMins = roundedMins === 60 ? 0 : roundedMins;
+                    
+                    // 確保小時不超過23
+                    if (finalHours > 23) {
+                        throw new Error('時間超出範圍');
+                    }
+                    
+                    time = String(finalHours).padStart(2, '0') + ':' + String(finalMins).padStart(2, '0');
+                }
+
+                // 🔍 調試：顯示發送的時間
+                const dateObj = new Date(date);
+                const timeObj = time ? new Date(`2000-01-01T${time}`) : null;
+                
+                console.log('📤 提交練琴記錄:', {
+                    日期輸入: date,
+                    時間輸入: time,
+                    系統時區偏移: new Date().getTimezoneOffset(),
+                    發送的日期: dateObj.toISOString().split('T')[0],
+                    發送的時間: time ? `2000-01-01T${time}:00` : null
+                });
+
+                const response = await fetch(`${API_BASE_URL}/practice/record`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({
+                        // 發送本地日期和時間，不使用 ISO 格式轉換（避免時區問題）
+                        date: `${date}T00:00:00`,
+                        time: time ? `2000-01-01T${time}:00` : null,
+                        practice_minutes: minutes,
+                        notes: notes
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || '提交失敗');
+                }
+
+                const data = await response.json();
+                showSuccess('練琴記錄已提交，等待家長批准！');
+                document.getElementById('practiceNotes').value = '';
+                document.getElementById('practiceMinutes').value = '';
+                
+                // 重新設置預設時間
+                const now = new Date();
+                const nowMinutes = Math.round(now.getMinutes() / 5) * 5;
+                let nowHours = now.getHours();
+                let finalMinutes = nowMinutes;
+                
+                // 處理舍入導致的小時變化
+                if (finalMinutes >= 60) {
+                    nowHours = (nowHours + 1) % 24;
+                    finalMinutes = 0;
+                }
+                
+                const finalTime = String(nowHours).padStart(2, '0') + ':' + String(finalMinutes).padStart(2, '0');
+                document.getElementById('practiceTime').value = finalTime;
+                
+                console.log('⏰ 重置時間:', {
+                    新時間: finalTime,
+                    系統時間: now.toString()
+                });
+                
+                loadPracticeRecords(currentUserId);
+            } catch (error) {
+                showError('提交練琴記錄失敗: ' + error.message);
+            }
+        }
+
+        // 加載練琴紀錄
+        async function loadPracticeRecords(childId) {
+            try {
+                if (!currentToken) return;
+
+                const response = await fetch(`${API_BASE_URL}/practice/records/${childId}`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+
+                if (!response.ok) throw new Error('加載失敗');
+
+                const data = await response.json();
+                
+                // 🔍 調試：記錄收到的數據
+                console.log('📊 loadPracticeRecords 收到的數據:', {
+                    total_records: data.total_records,
+                    pending_records: data.pending_records,
+                    approved_records: data.approved_records,
+                    records_array_length: data.records ? data.records.length : 0,
+                    records_array: data.records
+                });
+                
+                const list = document.getElementById('practiceRecordsList');
+                
+                if (!data.records || data.records.length === 0) {
+                    list.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">暫無練琴紀錄</p>';
+                    console.log('✅ 無記錄');
+                    return;
+                }
+
+                // 🔍 調試：顯示即將渲染的記錄數量
+                console.log(`📝 即將顯示 ${data.records.length} 筆記錄`);
+
+                list.innerHTML = `
+                    <div style="margin-bottom: 15px; color: #666;">
+                        <strong>批准紀錄: ${data.approved_records}</strong> | 
+                        <strong>待審核: ${data.pending_records}</strong> | 
+                        <strong>已批准總時間: ${data.total_approved_minutes}</strong> 分鐘
+                    </div>
+                ` + data.records.map((r, index) => {
+                    console.log(`  [${index + 1}] 渲染紀錄: ${r.date} - ${r.practice_minutes}分鐘`);
+                    return `
+                    <div class="record-item">
+                        <div class="record-header">
+                            <div class="record-date">${r.date}${r.time ? ' ' + r.time.substring(0, 5) : ''}</div>
+                            <div class="record-status ${r.status}">${getStatusText(r.status)}</div>
+                        </div>
+                        <div class="record-details">
+                            <div>⏱️ 練琴時間: ${r.practice_minutes} 分鐘</div>
+                            <div>📝 備註: ${r.notes || '無'}</div>
+                        </div>
+                    </div>
+                `;
+                }).join('');
+                
+                console.log(`✅ 成功渲染 ${data.records.length} 筆記錄到頁面`);
+            } catch (error) {
+                console.error('❌ 加載練琴紀錄失敗:', error);
+            }
+        }
+
+        // 申請遊戲時間
+        async function requestGameTime() {
+            try {
+                if (!currentToken) throw new Error('未登入');
+
+                const minutes = parseInt(document.getElementById('gameMinutes').value);
+
+                if (!minutes || minutes < 15) throw new Error('申請時間至少 15 分鐘');
+                if (minutes % 15 !== 0) throw new Error('申請時間必須以 15 分鐘為單位');
+
+                const response = await fetch(`${API_BASE_URL}/awards/request`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({
+                        game_minutes: minutes
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || '申請失敗');
+                }
+
+                const data = await response.json();
+                showSuccess(`申請成功！已扣除 ${data.game_minutes_used} 分鐘，剩餘 ${data.remaining_balance} 分鐘`);
+                document.getElementById('gameMinutes').value = '';
+                loadGameBalance(currentUserId);
+                loadGameRequestHistory(currentUserId);
+            } catch (error) {
+                showError('申請遊戲時間失敗: ' + error.message);
+            }
+        }
+
+        // 加載遊戲時間餘額
+        async function loadGameBalance(childId) {
+            try {
+                if (!currentToken) return;
+
+                const response = await fetch(`${API_BASE_URL}/awards/balance/${childId}`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+
+                if (!response.ok) throw new Error('加載失敗');
+
+                const data = await response.json();
+                document.getElementById('gameBalanceValue').textContent = data.game_balance;
+
+                // 加載兌換比例
+                const ratioResponse = await fetch(`${API_BASE_URL}/awards/ratio`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                
+                if (ratioResponse.ok) {
+                    const ratioData = await ratioResponse.json();
+                    document.getElementById('ratioInfo').textContent = 
+                        `${ratioData.description}`;
+                }
+            } catch (error) {
+                console.error('加載遊戲時間餘額失敗:', error);
+            }
+        }
+
+        // 加載遊戲時間申請歷史
+        async function loadGameRequestHistory(childId) {
+            try {
+                if (!currentToken) return;
+
+                const response = await fetch(`${API_BASE_URL}/awards/request-history/${childId}`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+
+                if (!response.ok) throw new Error('加載失敗');
+
+                const data = await response.json();
+                const list = document.getElementById('gameRequestsList');
+                
+                if (!data.requests || data.requests.length === 0) {
+                    list.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">暫無申請歷史</p>';
+                    return;
+                }
+
+                list.innerHTML = data.requests.map(r => `
+                    <div class="record-item">
+                        <div class="record-header">
+                            <div class="record-date">${new Date(r.request_date).toLocaleString('zh-TW')}</div>
+                            <div class="record-status approved">已批准</div>
+                        </div>
+                        <div class="record-details">
+                            <div>⏱️ 使用時間: ${r.game_minutes} 分鐘</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('加載申請歷史失敗:', error);
+            }
+        }
+
+        // 狀態文字
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': '⏳ 待審核',
+                'approved': '✅ 已批准',
+                'rejected': '❌ 已拒絕'
+            };
+            return statusMap[status] || status;
+        }
+
+        // 登出
+        function handleLogout() {
+            currentToken = null;
+            currentUserId = null;
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('dashboard').classList.remove('active');
+            document.getElementById('parentUsername').value = 'parent2024';
+            document.getElementById('parentPassword').value = 'securepass123';
+            document.getElementById('childId').value = '1';
+            document.getElementById('childPassword').value = 'child123';
+            selectUserType('parent');
+            clearMessages();
+            showSuccess('已登出');
+        }
+
+        // 清除測試結果
+        function clearTestResults() {
+            document.getElementById('testResults').innerHTML = '';
+        }
+
+        // 添加測試結果
+        function addTestResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('testResults');
+            const item = document.createElement('div');
+            item.className = `test-item ${type}`;
+            item.textContent = message;
+            resultsDiv.appendChild(item);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        // 測試：查詢遊戲餘額
+        async function testGetBalance() {
+            try {
+                if (!currentToken || !currentUserId) {
+                    throw new Error('未登入');
+                }
+
+                clearTestResults();
+                addTestResult('正在查詢遊戲餘額...', 'info');
+
+                const response = await fetch(`${API_BASE_URL}/awards/balance/${currentUserId}`, {
+                    method: 'GET',
+                    headers: { Authorization: `Bearer ${currentToken}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                addTestResult(`✅ 成功！`, 'success');
+                addTestResult(`孩子名稱: ${data.child_name}`, 'info');
+                addTestResult(`遊戲餘額: ${data.game_balance} 分鐘`, 'info');
+
+            } catch (error) {
+                addTestResult(`❌ 失敗: ${error.message}`, 'error');
+            }
+        }
+
+        // 測試：查詢練琴記錄
+        async function testGetRecords() {
+            try {
+                if (!currentToken || !currentUserId) {
+                    throw new Error('未登入');
+                }
+
+                clearTestResults();
+                addTestResult('正在查詢練琴記錄...', 'info');
+
+                const response = await fetch(`${API_BASE_URL}/practice/records/${currentUserId}`, {
+                    method: 'GET',
+                    headers: { Authorization: `Bearer ${currentToken}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                addTestResult(`✅ 成功！`, 'success');
+                addTestResult(`孩子名稱: ${data.child_name}`, 'info');
+                addTestResult(`總記錄數: ${data.total_records}`, 'info');
+                addTestResult(`總練琴時間: ${data.total_minutes} 分鐘`, 'info');
+
+                if (data.records && data.records.length > 0) {
+                    addTestResult(`最近的記錄:`, 'info');
+                    data.records.forEach(record => {
+                        addTestResult(`  - ${record.date}: ${record.practice_minutes}分鐘 (${record.notes})`, 'info');
+                    });
+                }
+
+            } catch (error) {
+                addTestResult(`❌ 失敗: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
