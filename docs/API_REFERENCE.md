@@ -1,17 +1,17 @@
-# 🧪 API 快速參考指南
+# 🧪 API Quick Reference
 
-## 📌 基礎資訊
+## 📌 Base Information
 
-- **服務器地址**: http://localhost:5000
-- **API前綴**: /api
-- **認證方式**: Bearer Token (JWT)
-- **內容類型**: application/json
+- **Server**: http://localhost:5000
+- **API Prefix**: /api
+- **Authentication**: Bearer Token (JWT)
+- **Content Type**: application/json
 
 ---
 
-## 🔐 認證端點 (/api/auth)
+## 🔐 Authentication Endpoints (/api/auth)
 
-### 家長註冊
+### Register Parent
 ```http
 POST /api/auth/parent/register
 Content-Type: application/json
@@ -24,12 +24,12 @@ Content-Type: application/json
 
 Response (201):
 {
-  "message": "註冊成功",
+  "message": "Registration successful",
   "parent_id": 1
 }
 ```
 
-### 家長登錄
+### Parent Login
 ```http
 POST /api/auth/parent/login
 Content-Type: application/json
@@ -47,26 +47,26 @@ Response (200):
 }
 ```
 
-### 孩子註冊
+### Register Child
 ```http
 POST /api/auth/child/register
 Content-Type: application/json
 
 {
   "parent_id": 1,
-  "name": "小明",
+  "name": "Xiao Ming",
   "age": 8,
   "password": "child123"
 }
 
 Response (201):
 {
-  "message": "孩子帳戶創建成功",
+  "message": "Child account created successfully",
   "child_id": 1
 }
 ```
 
-### 孩子登錄
+### Child Login
 ```http
 POST /api/auth/child/login
 Content-Type: application/json
@@ -80,15 +80,15 @@ Response (200):
 {
   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
   "child_id": 1,
-  "name": "小明"
+  "name": "Xiao Ming"
 }
 ```
 
 ---
 
-## 🎹 練琴記錄端點 (/api/practice)
+## 🎹 Practice Record Endpoints (/api/practice)
 
-### 添加練琴記錄
+### Add Practice Record
 ```http
 POST /api/practice/record
 Authorization: Bearer {child_token}
@@ -97,67 +97,111 @@ Content-Type: application/json
 {
   "date": "2026-03-22",
   "practice_minutes": 60,
-  "notes": "練習鋼琴基礎課程"
+  "notes": "Practiced piano basics"
 }
 
 Response (201):
 {
-  "message": "練琴記錄已保存",
+  "message": "Practice record submitted, awaiting parent approval",
   "date": "2026-03-22",
   "practice_minutes": 60
 }
 ```
 
-### 查詢練琴記錄
+### Query Practice Records
 ```http
 GET /api/practice/records/{child_id}
 Authorization: Bearer {token}
 
 Query Parameters:
-- start_date: 開始日期 (可選)
-- end_date: 結束日期 (可選)
+- start_date: start date (optional)
+- end_date: end date (optional)
+- status: pending / approved / rejected (optional)
 
 Response (200):
 {
   "child_id": 1,
-  "child_name": "小明",
+  "child_name": "Xiao Ming",
   "total_records": 5,
-  "total_minutes": 300,
+  "approved_records": 3,
+  "pending_records": 2,
+  "total_approved_minutes": 300,
   "records": [
     {
       "id": 1,
       "date": "2026-03-22",
+      "time": "14:35:00",
       "practice_minutes": 60,
-      "notes": "練習基礎課程"
+      "status": "approved",
+      "notes": "Practiced basics",
+      "created_at": "2026-03-22T07:38:47",
+      "approved_at": "2026-03-22T13:45:20"
     }
   ]
 }
 ```
 
-### 獲取統計數據
+### Get Statistics
 ```http
 GET /api/practice/statistics/{child_id}
 Authorization: Bearer {token}
 
-Query Parameters:
-- period: week / month / year (默認: month)
-
 Response (200):
 {
   "child_id": 1,
-  "child_name": "小明",
-  "period": "month",
-  "total_minutes": 300,
+  "total_approved_minutes": 300,
   "average_daily": 60.0,
   "days_practiced": 5
 }
 ```
 
+### Approve Practice Record
+```http
+POST /api/practice/record/{record_id}/approve
+Authorization: Bearer {parent_token}
+
+Response (200):
+{
+  "message": "Practice record approved",
+  "record_id": 1,
+  "practice_minutes": 60,
+  "game_minutes_earned": 60,
+  "child_new_balance": 120
+}
+```
+
+### Reject Practice Record
+```http
+POST /api/practice/record/{record_id}/reject
+Authorization: Bearer {parent_token}
+
+Response (200):
+{
+  "message": "Practice record rejected",
+  "record_id": 1
+}
+```
+
+### Get All Children (Parent)
+```http
+GET /api/practice/parent/children
+Authorization: Bearer {parent_token}
+
+Response (200):
+{
+  "parent_id": 1,
+  "parent_username": "parent1",
+  "practice_to_game_ratio": 1.0,
+  "children_count": 2,
+  "children": [...]
+}
+```
+
 ---
 
-## 🎁 遊戲獎勵端點 (/api/awards)
+## 🎁 Reward Points Endpoints (/api/awards)
 
-### 發放遊戲時間
+### Grant Reward Points
 ```http
 POST /api/awards/give
 Authorization: Bearer {parent_token}
@@ -166,21 +210,21 @@ Content-Type: application/json
 {
   "child_id": 1,
   "game_minutes": 30,
-  "reason": "完成練琴目標"
+  "reason": "Completed practice goal"
 }
 
 Response (201):
 {
-  "message": "遊戲時間已發放",
+  "message": "Reward points granted",
   "child_id": 1,
   "game_minutes": 30,
   "new_balance": 30
 }
 ```
 
-### 使用遊戲時間
+### Redeem Reward Points
 ```http
-POST /api/awards/deduct
+POST /api/awards/request
 Authorization: Bearer {child_token}
 Content-Type: application/json
 
@@ -190,13 +234,15 @@ Content-Type: application/json
 
 Response (200):
 {
-  "message": "遊戲時間已使用",
-  "used_minutes": 15,
-  "remaining_balance": 15
+  "message": "Reward points redeemed successfully",
+  "game_minutes_used": 15,
+  "remaining_balance": 15,
+  "request_id": 1,
+  "request_time": "2026-03-22T10:30:00"
 }
 ```
 
-### 查詢遊戲時間餘額
+### Query Reward Points Balance
 ```http
 GET /api/awards/balance/{child_id}
 Authorization: Bearer {token}
@@ -204,12 +250,13 @@ Authorization: Bearer {token}
 Response (200):
 {
   "child_id": 1,
-  "child_name": "小明",
-  "game_balance": 30
+  "child_name": "Xiao Ming",
+  "game_balance": 30,
+  "practice_to_game_ratio": 1.0
 }
 ```
 
-### 查詢獎勵歷史
+### Query Award History
 ```http
 GET /api/awards/history/{child_id}
 Authorization: Bearer {token}
@@ -217,63 +264,202 @@ Authorization: Bearer {token}
 Response (200):
 {
   "child_id": 1,
-  "child_name": "小明",
+  "child_name": "Xiao Ming",
   "total_awards": 3,
   "total_minutes_given": 90,
   "awards": [
     {
       "id": 1,
       "game_minutes": 30,
-      "reason": "完成練琴目標",
+      "reason": "Completed practice goal",
       "created_at": "2026-03-22T10:30:00"
     }
   ]
 }
 ```
 
+### Query Redemption History
+```http
+GET /api/awards/request-history/{child_id}
+Authorization: Bearer {token}
+
+Response (200):
+{
+  "child_id": 1,
+  "child_name": "Xiao Ming",
+  "total_requests": 2,
+  "total_minutes_used": 30,
+  "requests": [...]
+}
+```
+
+### Get Conversion Ratio
+```http
+GET /api/awards/ratio
+Authorization: Bearer {token}
+
+Response (200):
+{
+  "practice_to_game_ratio": 1.0,
+  "description": "1 min practice = 1 reward point(s)"
+}
+```
+
+### Set Conversion Ratio
+```http
+POST /api/awards/ratio
+Authorization: Bearer {parent_token}
+Content-Type: application/json
+
+{
+  "ratio": 1.5
+}
+
+Response (200):
+{
+  "message": "Conversion ratio updated",
+  "new_ratio": 1.5,
+  "description": "1 min practice = 1.5 reward point(s)"
+}
+```
+
 ---
 
-## 🔒 HTTP 狀態碼
+## 👶 Child Account Management (/api/management)
 
-| 狀態碼 | 說明 | 示例 |
-|--------|------|------|
-| 200 | 成功 | GET 請求成功 |
-| 201 | 創建成功 | POST 創建新記錄 |
-| 400 | 請求錯誤 | 缺少必要字段 |
-| 401 | 未授權 | 無效的Token |
-| 403 | 禁止訪問 | 權限不足 |
-| 404 | 未找到 | 資源不存在 |
-| 500 | 服務器錯誤 | 數據庫連接失敗 |
+### Create Child Account
+```http
+POST /api/management/create-child
+Authorization: Bearer {parent_token}
+Content-Type: application/json
+
+{
+  "name": "Xiao Ming",
+  "password": "child123",
+  "age": 8,
+  "id": "xiaoming"  // optional custom ID (alphanumeric, 1-20 chars)
+}
+
+Response (201):
+{
+  "message": "Child account created",
+  "child_id": "xiaoming",
+  "name": "Xiao Ming",
+  "age": 8,
+  "created_at": "2026-03-22T10:00:00"
+}
+```
+
+### Delete Child Account
+```http
+DELETE /api/management/delete-child/{child_id}
+Authorization: Bearer {parent_token}
+
+Response (200):
+{
+  "message": "Child account \"Xiao Ming\" deleted",
+  "child_id": "xiaoming"
+}
+```
+
+### Update Child Password
+```http
+POST /api/management/update-child-password/{child_id}
+Authorization: Bearer {parent_token}
+Content-Type: application/json
+
+{
+  "new_password": "newpassword123"
+}
+
+Response (200):
+{
+  "message": "Password for Xiao Ming updated",
+  "child_id": "xiaoming",
+  "child_name": "Xiao Ming"
+}
+```
+
+### Update Child Name
+```http
+POST /api/management/update-child-name/{child_id}
+Authorization: Bearer {parent_token}
+Content-Type: application/json
+
+{
+  "new_name": "Xiao Hong"
+}
+
+Response (200):
+{
+  "message": "Child name updated from \"Xiao Ming\" to \"Xiao Hong\"",
+  "child_id": "xiaoming",
+  "child_name": "Xiao Hong"
+}
+```
+
+### Update Child Age
+```http
+POST /api/management/update-child-age/{child_id}
+Authorization: Bearer {parent_token}
+Content-Type: application/json
+
+{
+  "age": 9
+}
+
+Response (200):
+{
+  "message": "Age for Xiao Ming updated to 9",
+  "child_id": "xiaoming",
+  "child_name": "Xiao Ming",
+  "age": 9
+}
+```
 
 ---
 
-## 📊 錯誤響應示例
+## 🔒 HTTP Status Codes
 
-### 缺少字段
+| Code | Meaning | Example |
+|------|---------|---------|
+| 200 | Success | GET request successful |
+| 201 | Created | POST created new record |
+| 400 | Bad Request | Missing required fields |
+| 401 | Unauthorized | Invalid Token |
+| 403 | Forbidden | Permission denied |
+| 404 | Not Found | Resource does not exist |
+| 500 | Server Error | Database connection failed |
+
+---
+
+## 📊 Error Response Examples
+
+### Missing Fields
 ```json
 {
-  "error": "缺少必要字段"
+  "error": "Missing required fields"
 }
 ```
 
-### 無效的Token
+### Invalid Token
 ```json
 {
-  "msg": "Token 無效或已過期"
+  "msg": "Token is invalid or expired"
 }
 ```
 
-### 權限不足
+### Permission Denied
 ```json
 {
-  "error": "權限不足"
+  "error": "Permission denied"
 }
 ```
 
-### 遊戲時間不足
+### Insufficient Reward Points
 ```json
 {
-  "error": "遊戲時間不足",
+  "error": "Insufficient reward points",
   "current_balance": 10,
   "requested": 20
 }
@@ -281,12 +467,12 @@ Response (200):
 
 ---
 
-## 🧪 測試示例 (PowerShell)
+## 🧪 Test Examples (PowerShell)
 
-### 完整測試流程
+### Complete Test Flow
 
 ```powershell
-# 1. 家長登錄
+# 1. Parent login
 $parentBody = @{username="parent1"; password="password123"} | ConvertTo-Json
 $parentLogin = Invoke-WebRequest `
   -Uri http://localhost:5000/api/auth/parent/login `
@@ -295,7 +481,7 @@ $parentLogin = Invoke-WebRequest `
   -Body $parentBody -UseBasicParsing | ConvertFrom-Json
 $parentToken = $parentLogin.access_token
 
-# 2. 孩子登錄
+# 2. Child login
 $childBody = @{child_id=1; password="child123"} | ConvertTo-Json
 $childLogin = Invoke-WebRequest `
   -Uri http://localhost:5000/api/auth/child/login `
@@ -304,11 +490,11 @@ $childLogin = Invoke-WebRequest `
   -Body $childBody -UseBasicParsing | ConvertFrom-Json
 $childToken = $childLogin.access_token
 
-# 3. 添加練琴記錄
+# 3. Add practice record
 $practiceBody = @{
   date=(Get-Date).ToString("yyyy-MM-dd")
   practice_minutes=60
-  notes="練習基礎課程"
+  notes="Practiced basics"
 } | ConvertTo-Json
 
 Invoke-WebRequest `
@@ -320,18 +506,18 @@ Invoke-WebRequest `
   } `
   -Body $practiceBody -UseBasicParsing
 
-# 4. 查詢遊戲餘額
+# 4. Query reward points balance
 Invoke-WebRequest `
   -Uri http://localhost:5000/api/awards/balance/1 `
   -Method GET `
   -Headers @{"Authorization"="Bearer $childToken"} `
   -UseBasicParsing | ConvertFrom-Json
 
-# 5. 發放遊戲時間
+# 5. Grant reward points
 $awardBody = @{
   child_id=1
   game_minutes=30
-  reason="完成練琴目標"
+  reason="Completed practice goal"
 } | ConvertTo-Json
 
 Invoke-WebRequest `
@@ -346,21 +532,21 @@ Invoke-WebRequest `
 
 ---
 
-## 💡 常見問題
+## 💡 FAQ
 
-### Q: Token 已過期怎麼辦？
-**A**: 使用登錄端點重新獲取新 Token, 舊 Token 將失效。
+### Q: What should I do if my Token has expired?
+**A**: Use the login endpoint to get a new Token. The old Token will be invalid.
 
-### Q: 如何修改已保存的練琴記錄？
-**A**: 使用相同日期調用 `POST /api/practice/record` 端點，系統將自動更新。
+### Q: How do I modify a saved practice record?
+**A**: Call `POST /api/practice/record` with the same date. The system will automatically update it.
 
-### Q: 孩子可以自己發放遊戲時間嗎？
-**A**: 不可以，只有家長才能發放遊戲時間。
+### Q: Can a child grant themselves reward points?
+**A**: No. Only parents can grant reward points.
 
-### Q: 一個家長可以管理多個孩子嗎？
-**A**: 是的，家長可以註冊多個孩子帳戶。
+### Q: Can one parent manage multiple children?
+**A**: Yes. A parent can create and manage multiple child accounts.
 
 ---
 
-**Last Updated**: 2026-03-22  
+**Last Updated**: 2026-03-22
 **API Version**: 1.0

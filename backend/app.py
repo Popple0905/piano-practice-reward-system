@@ -6,57 +6,55 @@ from models import db
 import os
 
 def create_app(config_name='development'):
-    """应用工厂"""
+    """Application factory"""
     app = Flask(__name__)
-    
-    # 加载配置（默认使用development以便SQLite）
+
+    # Load configuration (defaults to development with SQLite)
     app.config.from_object(config[config_name])
-    
-    # 初始化数据库
+
+    # Initialize database
     db.init_app(app)
-    
-    # 初始化JWT
+
+    # Initialize JWT
     jwt = JWTManager(app)
-    
-    # 启用CORS
+
+    # Enable CORS
     CORS(app)
-    
-    # 注册蓝图
+
+    # Register blueprints
     from routes.auth import auth_bp
     from routes.practice import practice_bp
     from routes.awards import awards_bp
     from routes.management import management_bp
-    
+    from routes.special_redemptions import special_redemptions_bp
+
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(practice_bp, url_prefix='/api/practice')
     app.register_blueprint(awards_bp, url_prefix='/api/awards')
     app.register_blueprint(management_bp, url_prefix='/api/management')
-    
-    # 前端文件路径 - 相对于 backend 目录的上一级
+    app.register_blueprint(special_redemptions_bp, url_prefix='/api/special-redemptions')
+
+    # Frontend file path - one level up from the backend directory
     FRONTEND_DIR = os.path.join(os.path.dirname(__file__), '..', 'frontend')
-    
-    # 提供前端文件
+
+    # Serve frontend files
     @app.route('/', methods=['GET'])
     def serve_index():
         return send_from_directory(FRONTEND_DIR, 'index.html')
-    
+
     @app.route('/<path:filename>', methods=['GET'])
     def serve_files(filename):
         file_path = os.path.join(FRONTEND_DIR, filename)
         if os.path.isfile(file_path):
             return send_from_directory(FRONTEND_DIR, filename)
-        # 所有其他路由返回 index.html（支持前端路由）
+        # All other routes return index.html (supports frontend routing)
         return send_from_directory(FRONTEND_DIR, 'index.html')
-    
-    # 创建数据库表
+
+    # Create database tables
     with app.app_context():
         db.create_all()
-    
-    return app
 
-if __name__ == '__main__':
-    app = create_app('development')
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    return app
 
 if __name__ == '__main__':
     app = create_app('development')

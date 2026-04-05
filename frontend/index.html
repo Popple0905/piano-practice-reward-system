@@ -960,6 +960,7 @@
                         <button class="nav-tab" onclick="switchTab('pending-records')">⏳ 待批準記錄</button>
                         <button class="nav-tab" onclick="switchTab('approved-records')">✅ 已批准紀錄</button>
                         <button class="nav-tab" onclick="switchTab('manage-children')">👤 管理兒童帳號</button>
+                        <button class="nav-tab" onclick="switchTab('special-redemptions-mgmt')">🎁 特殊兌換</button>
                         <button class="nav-tab" onclick="switchTab('parent-settings')">⚙️ 帳號設定</button>
                     </div>
 
@@ -1021,6 +1022,45 @@
                         </div>
                     </div>
 
+                    <!-- 特殊兌換管理 -->
+                    <div id="special-redemptions-mgmt" class="tab-content">
+                        <div class="form-section">
+                            <h3>➕ 新增特殊兌換項目</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="srChildSelect">選擇孩子</label>
+                                    <select id="srChildSelect"></select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="srPointsCost">兌換點數</label>
+                                    <input type="number" id="srPointsCost" placeholder="例: 100" min="1">
+                                </div>
+                            </div>
+                            <div class="form-row full">
+                                <div class="form-group">
+                                    <label for="srContent">兌換內容</label>
+                                    <input type="text" id="srContent" placeholder="例: 一次冰淇淋、看一部電影">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="srQuantity">數量（選填，留空表示無限）</label>
+                                    <input type="number" id="srQuantity" placeholder="例: 3" min="1">
+                                </div>
+                                <div class="form-group">
+                                    <label for="srExpiresAt">兌換期限（選填，留空表示不過期）</label>
+                                    <input type="datetime-local" id="srExpiresAt">
+                                </div>
+                            </div>
+                            <button class="submit-btn" onclick="addSpecialRedemption()">新增項目</button>
+                            <div id="srAddResult" style="margin-top: 15px;"></div>
+                        </div>
+                        <div class="form-section">
+                            <h3>📋 目前特殊兌換項目</h3>
+                            <div id="srManageList" style="margin-top: 15px;"></div>
+                        </div>
+                    </div>
+
                     <!-- 帳號設定 -->
                     <div id="parent-settings" class="tab-content">
                         <div class="form-section">
@@ -1057,7 +1097,8 @@
                         <button class="nav-tab active" onclick="switchTab('log-practice')">📝 登錄練琴</button>
                         <button class="nav-tab" onclick="switchTab('practice-history')">📋 練琴紀錄</button>
                         <button class="nav-tab" onclick="switchTab('request-game')">🎮 申請遊戲時間</button>
-                        <button class="nav-tab" onclick="switchTab('reward-history')">🎁 獎勵兌換紀錄</button>
+                        <button class="nav-tab" onclick="switchTab('special-redemptions-child')">🎁 特殊兌換</button>
+                        <button class="nav-tab" onclick="switchTab('reward-history')">📜 兌換紀錄</button>
                     </div>
 
                     <!-- 登錄練琴時間 -->
@@ -1118,10 +1159,18 @@
                         <div id="requestGameResult"></div>
                     </div>
 
-                    <!-- 獎勵兌換紀錄 -->
+                    <!-- 特殊兌換 -->
+                    <div id="special-redemptions-child" class="tab-content">
+                        <div class="form-section">
+                            <h3>🎁 可兌換項目</h3>
+                            <div id="srChildList" style="margin-top: 16px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 兌換紀錄 -->
                     <div id="reward-history" class="tab-content">
                         <div class="form-section">
-                            <h3>🎁 獎勵兌換紀錄</h3>
+                            <h3>📜 兌換紀錄</h3>
                             <div id="rewardHistoryList" style="margin-top: 16px;"></div>
                         </div>
                     </div>
@@ -1194,13 +1243,11 @@
             const parentSaved = JSON.parse(localStorage.getItem('parent_remember') || 'null');
             if (parentSaved) {
                 document.getElementById('parentUsername').value = parentSaved.username || '';
-                document.getElementById('parentPassword').value = parentSaved.password || '';
                 document.getElementById('parentRemember').checked = true;
             }
             const childSaved = JSON.parse(localStorage.getItem('child_remember') || 'null');
             if (childSaved) {
                 document.getElementById('childId').value = childSaved.childId || '';
-                document.getElementById('childPassword').value = childSaved.password || '';
                 document.getElementById('childRemember').checked = true;
             }
         }
@@ -1228,7 +1275,7 @@
 
                     // 記住帳號
                     if (document.getElementById('parentRemember').checked) {
-                        localStorage.setItem('parent_remember', JSON.stringify({ username, password }));
+                        localStorage.setItem('parent_remember', JSON.stringify({ username }));
                     } else {
                         localStorage.removeItem('parent_remember');
                     }
@@ -1245,7 +1292,7 @@
 
                     // 記住帳號
                     if (document.getElementById('childRemember').checked) {
-                        localStorage.setItem('child_remember', JSON.stringify({ childId, password }));
+                        localStorage.setItem('child_remember', JSON.stringify({ childId }));
                     } else {
                         localStorage.removeItem('child_remember');
                     }
@@ -1300,6 +1347,9 @@
 
         // 顯示儀表板
         function displayDashboard(userType, userId, userName, token) {
+            // 先重置兩個 nav 的狀態
+            resetNavState();
+
             document.getElementById('loginForm').classList.add('hidden');
             document.getElementById('dashboard').classList.add('active');
 
@@ -1320,6 +1370,44 @@
             }
 
             clearTestResults();
+        }
+
+        // 重置所有 nav 狀態與動態內容
+        function resetNavState() {
+            // 隱藏兩個 nav
+            document.getElementById('parentNav').style.display = 'none';
+            document.getElementById('childNav').style.display = 'none';
+            document.getElementById('rewardPointsDisplay').style.display = 'none';
+
+            // 清空動態內容
+            const dynamicContainers = [
+                'childrenListContainer', 'pendingRecordsContainer', 'approvedRecordsContainer',
+                'manageChildrenList', 'practiceRecordsList', 'submitPracticeResult',
+                'requestGameResult', 'addChildResult', 'srManageList', 'srAddResult',
+                'srChildList', 'rewardHistoryList'
+            ];
+            dynamicContainers.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = '';
+            });
+
+            // 重置 parent tab 到第一個
+            const parentTabs = document.querySelectorAll('#parentNav .tab-content');
+            parentTabs.forEach(t => t.classList.remove('active'));
+            const firstParentTab = document.querySelector('#parentNav .tab-content');
+            if (firstParentTab) firstParentTab.classList.add('active');
+            document.querySelectorAll('#parentNav .nav-tab').forEach((btn, i) => {
+                btn.classList.toggle('active', i === 0);
+            });
+
+            // 重置 child tab 到第一個
+            const childTabs = document.querySelectorAll('#childNav .tab-content');
+            childTabs.forEach(t => t.classList.remove('active'));
+            const firstChildTab = document.querySelector('#childNav .tab-content');
+            if (firstChildTab) firstChildTab.classList.add('active');
+            document.querySelectorAll('#childNav .nav-tab').forEach((btn, i) => {
+                btn.classList.toggle('active', i === 0);
+            });
         }
 
         // 加載家長端儀表板
@@ -1511,7 +1599,7 @@
                             <span class="ar-date">${r.date}</span>
                             <span class="ar-minutes">${r.practice_minutes} 分鐘</span>
                             <span class="ar-note">${r.notes || ''}</span>
-                            <span class="ar-time">${r.approved_at ? new Date(r.approved_at).toLocaleDateString('zh-TW') : ''}</span>
+                            <span class="ar-time">${r.approved_at ? formatDatetime(r.approved_at) : ''}</span>
                         </div>
                     `).join('');
 
@@ -1561,7 +1649,7 @@
                     </div>
                     <div class="record-details">
                         <div>備註: ${record.notes || '無'}</div>
-                        <div>提交時間: ${record.created_at ? new Date(record.created_at).toLocaleString('zh-TW') : '未知'}</div>
+                        <div>提交時間: ${record.created_at ? formatDatetime(record.created_at) : '未知'}</div>
                     </div>
                     <div class="record-action-buttons">
                         <button class="record-action-btn approve" onclick="approveRecord(${record.id})">✓ 批準</button>
@@ -1675,9 +1763,9 @@
                 <div class="record-item">
                     <div class="record-header">
                         <div>
-                            <div class="record-date">👧 ${request.child_name} - ${new Date(request.request_date).toLocaleDateString('zh-TW')}</div>
+                            <div class="record-date">👧 ${request.child_name} - ${formatDatetime(request.request_date)}</div>
                             <div style="font-size: 13px; color: #999; margin-top: 3px;">
-                                申請時間：${new Date(request.request_date).toLocaleString('zh-TW')}
+                                申請時間：${formatDatetime(request.request_date)}
                             </div>
                         </div>
                     </div>
@@ -2046,6 +2134,10 @@
                 loadApprovedRecords();
             } else if (tabName === 'manage-children') {
                 loadManageChildren();
+            } else if (tabName === 'special-redemptions-mgmt') {
+                loadSpecialRedemptionsMgmt();
+            } else if (tabName === 'special-redemptions-child') {
+                loadSpecialRedemptionsChild(currentUserId);
             }
         }
 
@@ -2267,39 +2359,243 @@
             }
         }
 
-        // 加載獎勵兌換紀錄
+        // 加載兌換紀錄（遊戲時間 + 特殊兌換合併顯示）
         async function loadRewardHistory(childId) {
             const list = document.getElementById('rewardHistoryList');
             list.innerHTML = '<p style="text-align:center;color:var(--text-subdued);">載入中...</p>';
             try {
                 if (!currentToken) return;
-                const response = await fetch(`${API_BASE_URL}/awards/request-history/${childId}`, {
-                    headers: { 'Authorization': `Bearer ${currentToken}` }
-                });
-                if (!response.ok) throw new Error('加載失敗');
-                const data = await response.json();
+                const [gameRes, srRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/awards/request-history/${childId}`, {
+                        headers: { 'Authorization': `Bearer ${currentToken}` }
+                    }),
+                    fetch(`${API_BASE_URL}/special-redemptions/records/${childId}`, {
+                        headers: { 'Authorization': `Bearer ${currentToken}` }
+                    })
+                ]);
 
-                if (!data.requests || data.requests.length === 0) {
+                const gameData = gameRes.ok ? await gameRes.json() : { requests: [] };
+                const srData = srRes.ok ? await srRes.json() : { records: [] };
+
+                const gameItems = (gameData.requests || []).map(r => ({
+                    type: 'game',
+                    date: new Date(r.request_date),
+                    points: r.game_minutes,
+                    label: '🎮 兌換遊戲時間'
+                }));
+                const srItems = (srData.records || []).map(r => ({
+                    type: 'special',
+                    date: new Date(r.redeemed_at),
+                    points: r.points_spent,
+                    label: `🎁 ${r.content}`
+                }));
+
+                const all = [...gameItems, ...srItems].sort((a, b) => b.date - a.date);
+
+                if (all.length === 0) {
                     list.innerHTML = '<p style="color:var(--text-subdued);text-align:center;padding:20px;">尚無兌換紀錄</p>';
                     return;
                 }
 
-                list.innerHTML = data.requests.map(r => `
+                list.innerHTML = all.map(r => `
                     <div class="record-item">
                         <div class="record-header">
                             <div>
-                                <div class="record-date">🎮 兌換遊戲時間</div>
+                                <div class="record-date">${r.label}</div>
                                 <div style="font-size:12px;color:var(--text-subdued);margin-top:3px;">
-                                    ${new Date(r.request_date).toLocaleString('zh-TW')}
+                                    ${formatDatetime(r.date.toISOString())}
                                 </div>
                             </div>
-                            <div class="reward-cost-badge">− ${r.game_minutes} 點</div>
+                            <div class="reward-cost-badge">− ${r.points} 點</div>
                         </div>
                     </div>
                 `).join('');
             } catch (error) {
                 list.innerHTML = `<p style="color:var(--danger)">載入失敗：${error.message}</p>`;
             }
+        }
+
+        // ── 特殊兌換（家長管理） ────────────────────────────────────
+
+        async function loadSpecialRedemptionsMgmt() {
+            // 填充孩子選單
+            const select = document.getElementById('srChildSelect');
+            try {
+                const res = await fetch(`${API_BASE_URL}/practice/parent/children`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                const data = await res.json();
+                const children = data.children || [];
+                select.innerHTML = children.length === 0
+                    ? '<option value="">尚無孩子帳號</option>'
+                    : children.map(c => `<option value="${c.id}">${c.name}（${c.id}）</option>`).join('');
+            } catch (e) {
+                select.innerHTML = '<option value="">載入失敗</option>';
+            }
+
+            // 載入現有項目
+            const listEl = document.getElementById('srManageList');
+            listEl.innerHTML = '<p style="text-align:center;color:var(--text-subdued);">載入中...</p>';
+            try {
+                const res = await fetch(`${API_BASE_URL}/special-redemptions/parent`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                const data = await res.json();
+                const items = data.items || [];
+                if (items.length === 0) {
+                    listEl.innerHTML = '<p style="color:var(--text-subdued);text-align:center;padding:20px;">尚無特殊兌換項目</p>';
+                    return;
+                }
+                const now = new Date();
+                listEl.innerHTML = items.map(item => {
+                    const expired = item.is_expired;
+                    const expiryText = item.expires_at
+                        ? `期限：${formatDatetime(item.expires_at)}`
+                        : '無期限';
+                    const quantityText = item.quantity !== null ? `數量：${item.quantity}` : '數量：無限';
+                    return `
+                    <div class="record-item" style="${expired ? 'opacity:0.5;' : ''}">
+                        <div class="record-header">
+                            <div>
+                                <div class="record-date">${item.content} ${expired ? '（已過期）' : ''}</div>
+                                <div style="font-size:12px;color:var(--text-subdued);margin-top:3px;">
+                                    孩子：${item.child_name}（${item.child_id}）　${quantityText}　${expiryText}
+                                </div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div class="reward-cost-badge">${item.points_cost} 點</div>
+                                <button class="action-btn" style="padding:4px 10px;font-size:12px;" onclick="deleteSpecialRedemption(${item.id})">刪除</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                listEl.innerHTML = `<p style="color:var(--danger)">載入失敗：${e.message}</p>`;
+            }
+        }
+
+        async function addSpecialRedemption() {
+            const childId = document.getElementById('srChildSelect').value;
+            const content = document.getElementById('srContent').value.trim();
+            const pointsCost = parseInt(document.getElementById('srPointsCost').value);
+            const expiresAt = document.getElementById('srExpiresAt').value;
+            const resultEl = document.getElementById('srAddResult');
+
+            const quantityRaw = document.getElementById('srQuantity').value;
+            const quantity = quantityRaw ? parseInt(quantityRaw) : null;
+
+            if (!childId || !content || !pointsCost) {
+                resultEl.innerHTML = '<p style="color:var(--danger)">請填寫孩子、內容與點數</p>';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/special-redemptions/`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        child_id: childId,
+                        content,
+                        points_cost: pointsCost,
+                        quantity,
+                        expires_at: expiresAt ? new Date(expiresAt).toISOString() : null
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || '新增失敗');
+                resultEl.innerHTML = '<p style="color:var(--success)">✅ 新增成功</p>';
+                document.getElementById('srContent').value = '';
+                document.getElementById('srPointsCost').value = '';
+                document.getElementById('srQuantity').value = '';
+                document.getElementById('srExpiresAt').value = '';
+                loadSpecialRedemptionsMgmt();
+            } catch (e) {
+                resultEl.innerHTML = `<p style="color:var(--danger)">新增失敗：${e.message}</p>`;
+            }
+        }
+
+        async function deleteSpecialRedemption(itemId) {
+            if (!confirm('確定要刪除此兌換項目？')) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/special-redemptions/${itemId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                if (!res.ok) throw new Error('刪除失敗');
+                loadSpecialRedemptionsMgmt();
+            } catch (e) {
+                alert('刪除失敗：' + e.message);
+            }
+        }
+
+        // ── 特殊兌換（孩子端） ────────────────────────────────────
+
+        async function loadSpecialRedemptionsChild(childId) {
+            const listEl = document.getElementById('srChildList');
+            listEl.innerHTML = '<p style="text-align:center;color:var(--text-subdued);">載入中...</p>';
+            try {
+                const res = await fetch(`${API_BASE_URL}/special-redemptions/child/${childId}`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                const data = await res.json();
+                const items = data.items || [];
+                if (items.length === 0) {
+                    listEl.innerHTML = '<p style="color:var(--text-subdued);text-align:center;padding:20px;">目前沒有可兌換的項目</p>';
+                    return;
+                }
+                listEl.innerHTML = items.map(item => {
+                    const expiryText = item.expires_at
+                        ? `<span style="font-size:11px;color:var(--text-subdued);">期限：${formatDatetime(item.expires_at)}</span>`
+                        : '';
+                    const quantityText = item.quantity !== null
+                        ? `<span style="font-size:11px;color:var(--text-subdued);">剩餘數量：${item.quantity}</span>`
+                        : '';
+                    return `
+                    <div class="record-item">
+                        <div class="record-header">
+                            <div>
+                                <div class="record-date">🎁 ${item.content}</div>
+                                <div style="margin-top:4px;display:flex;gap:10px;">${quantityText}${expiryText}</div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div class="reward-cost-badge">${item.points_cost} 點</div>
+                                <button class="submit-btn" style="padding:6px 14px;font-size:13px;margin:0;" onclick="redeemSpecialItem(${item.id}, '${item.content.replace(/'/g, "\\'")}', ${item.points_cost})">兌換</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                listEl.innerHTML = `<p style="color:var(--danger)">載入失敗：${e.message}</p>`;
+            }
+        }
+
+        async function redeemSpecialItem(itemId, content, cost) {
+            if (!confirm(`確定要用 ${cost} 點兌換「${content}」嗎？`)) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/special-redemptions/${itemId}/redeem`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || '兌換失敗');
+                alert(`✅ 兌換成功！剩餘點數：${data.remaining_balance} 點`);
+                loadGameBalance(currentUserId);
+                loadSpecialRedemptionsChild(currentUserId);
+            } catch (e) {
+                alert('兌換失敗：' + e.message);
+            }
+        }
+
+        // 格式化日期時間（UTC ISO → 本地時間，格式：YYYY/MM/DD HH:MM）
+        function formatDatetime(isoStr) {
+            if (!isoStr) return '';
+            const d = new Date(isoStr);
+            const y = d.getFullYear();
+            const mo = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const h = String(d.getHours()).padStart(2, '0');
+            const mi = String(d.getMinutes()).padStart(2, '0');
+            return `${y}/${mo}/${day} ${h}:${mi}`;
         }
 
         // 狀態文字
@@ -2316,12 +2612,12 @@
         function handleLogout() {
             currentToken = null;
             currentUserId = null;
+            resetNavState();
             document.getElementById('loginForm').classList.remove('hidden');
             document.getElementById('dashboard').classList.remove('active');
-            document.getElementById('parentUsername').value = 'parent2024';
-            document.getElementById('parentPassword').value = 'securepass123';
-            document.getElementById('childId').value = '1';
-            document.getElementById('childPassword').value = 'child123';
+            document.getElementById('parentPassword').value = '';
+            document.getElementById('childPassword').value = '';
+            loadRememberedCredentials();
             selectUserType('parent');
             clearMessages();
             showSuccess('已登出');

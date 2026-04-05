@@ -2,23 +2,24 @@ import os
 from datetime import timedelta
 
 class Config:
-    """基础配置"""
+    """Base configuration"""
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'your-secret-key-change-in-production')
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=30)
     JWT_ALGORITHM = 'HS256'
-    
+
 class DevelopmentConfig(Config):
-    """开发环境配置"""
+    """Development environment configuration"""
     DEBUG = True
-    # 使用SQLite进行本地开发测试
+    # Use SQLite for local development and testing
     SQLALCHEMY_DATABASE_URI = os.getenv(
         'DATABASE_URL',
-        'sqlite:///piano_app.db'
+        'sqlite:///piano_app.db?timeout=30'
     )
+    SQLALCHEMY_ENGINE_OPTIONS = {'connect_args': {'timeout': 30}}
 
 class ProductionConfig(Config):
-    """生产环境配置"""
+    """Production environment configuration"""
     DEBUG = False
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', '')
 

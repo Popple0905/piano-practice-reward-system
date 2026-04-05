@@ -1,43 +1,43 @@
-# 📥 完整安裝指南
+# 📥 Complete Installation Guide
 
-## 準備工作
+## Prerequisites
 
-### 系統要求
-- **操作系統**: Windows / macOS / Linux
-- **Python**: 3.10 或更高版本
-- **磁盤空間**: 至少 500MB （用於依賴包）
-- **網絡**: 良好的網絡連接（用於下載依賴）
+### System Requirements
+- **OS**: Windows / macOS / Linux
+- **Python**: 3.10 or higher
+- **Disk Space**: At least 500MB (for dependencies)
+- **Network**: Good internet connection (for downloading dependencies)
 
-### 驗證環境
+### Verify Environment
 ```bash
-# 驗證 Python 版本
+# Verify Python version
 python --version
-# 預期輸出: Python 3.x.x
+# Expected output: Python 3.x.x
 
-# 驗證 pip 已安裝
+# Verify pip is installed
 pip --version
-# 預期輸出: pip x.x.x from ...
+# Expected output: pip x.x.x from ...
 ```
 
 ---
 
-## 🚀 快速安裝 (5分鐘)
+## 🚀 Quick Installation (5 minutes)
 
-### 步驟 1: 克隆或下載項目
+### Step 1: Clone or Download Project
 ```bash
-# 使用 Git 克隆
+# Clone with Git
 git clone <repository-url>
 cd PianoAPPv1
 
-# 或直接下載 ZIP 文件並解壓
+# Or download ZIP and extract
 ```
 
-### 步驟 2: 進入後端目錄
+### Step 2: Enter Backend Directory
 ```bash
 cd backend
 ```
 
-### 步驟 3: 創建虛擬環境
+### Step 3: Create Virtual Environment
 ```bash
 # Windows
 python -m venv venv
@@ -48,21 +48,21 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 
-**驗證**: 命令提示符應該在開始處顯示 `(venv)`
+**Verify**: The command prompt should show `(venv)` at the beginning
 
-### 步驟 4: 安裝依賴
+### Step 4: Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-**預期輸出**: 所有包應該成功安裝，無錯誤信息
+**Expected output**: All packages installed successfully, no errors
 
-### 步驟 5: 啟動服務器
+### Step 5: Start Server
 ```bash
 python app.py
 ```
 
-**預期輸出**:
+**Expected output**:
 ```
  * Serving Flask app 'app'
  * Debug mode: off
@@ -71,70 +71,70 @@ python app.py
 Press CTRL+C to quit
 ```
 
-✅ **完成！** 後端服務已在 `http://localhost:5000` 運行
+✅ **Done!** Backend service is running at `http://localhost:5000`
 
 ---
 
-## 🔧 詳細安裝步驟
+## 🔧 Detailed Installation Steps
 
-### 方式 A: 使用 PowerShell (Windows)
+### Method A: Using PowerShell (Windows)
 
 ```powershell
-# 1. 進入項目目錄
+# 1. Enter project directory
 cd "path\to\PianoAPPv1"
 
-# 2. 進入後端目錄
+# 2. Enter backend directory
 cd backend
 
-# 3. 創建虛擬環境
+# 3. Create virtual environment
 python -m venv venv
 
-# 4. 激活虛擬環境
+# 4. Activate virtual environment
 .\venv\Scripts\Activate.ps1
-# 如果無法執行，可能需要更改執行策略:
+# If cannot execute, you may need to change execution policy:
 # Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
-# 5. 安裝依賴
+# 5. Install dependencies
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# 6. 啟動服務器
+# 6. Start server
 python app.py
 ```
 
-### 方式 B: 使用 Bash (macOS / Linux)
+### Method B: Using Bash (macOS / Linux)
 
 ```bash
-# 1. 進入項目目錄
+# 1. Enter project directory
 cd ~/path/to/PianoAPPv1
 
-# 2. 進入後端目錄
+# 2. Enter backend directory
 cd backend
 
-# 3. 創建虛擬環境
+# 3. Create virtual environment
 python3 -m venv venv
 
-# 4. 激活虛擬環境
+# 4. Activate virtual environment
 source venv/bin/activate
 
-# 5. 安裝依賴
+# 5. Install dependencies
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# 6. 啟動服務器
+# 6. Start server
 python app.py
 ```
 
 ---
 
-## ⚙️ 配置
+## ⚙️ Configuration
 
-### 使用默認配置 (推薦用於開發)
-無需額外配置，系統使用默認的 SQLite 數據庫。
+### Default Configuration (recommended for development)
+No extra configuration needed. The system uses SQLite by default.
 
-### 自定義配置 (可選)
+### Custom Configuration (optional)
 
-創建 `.env` 文件在 `backend/` 目錄:
+Create a `.env` file in the `backend/` directory:
 
 ```env
 FLASK_ENV=development
@@ -142,153 +142,153 @@ FLASK_DEBUG=1
 JWT_SECRET_KEY=your-custom-secret-key
 ```
 
-將 `.env.example` 複製為 `.env`:
+Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
 
-然後編輯 `.env` 文件根據需要修改。
+Then edit the `.env` file as needed.
 
 ---
 
-## 🗄️ 數據庫
+## 🗄️ Database
 
-### 本地開發 (SQLite)
+### Local Development (SQLite)
 
-✅ **自動設置**
-- 數據庫自動在首次運行時創建
-- 文件保存在 `backend/piano_app.db`
-- 無需任何額外操作
+✅ **Auto Setup**
+- Database created automatically on first run
+- File saved at `backend/instance/piano_app.db`
+- No additional steps required
 
-檢查數據庫文件:
+Verify the database file:
 ```bash
-# 列出數據庫文件
-ls backend/piano_app.db  # Linux/macOS
-dir backend\piano_app.db  # Windows
+# List database file
+ls backend/instance/piano_app.db  # Linux/macOS
+dir backend\instance\piano_app.db  # Windows
 ```
 
-### 生產環境 (MySQL)
+### Production (MySQL)
 
-#### 安裝 MySQL
+#### Install MySQL
 - **Windows**: https://dev.mysql.com/downloads/mysql/
 - **macOS**: `brew install mysql`
 - **Linux**: `sudo apt-get install mysql-server`
 
-#### 配置連接
-修改 `.env` 文件:
+#### Configure Connection
+Edit `.env` file:
 ```env
 DATABASE_URL=mysql+pymysql://username:password@localhost:3306/piano_app
 ```
 
-#### 初始化數據庫
+#### Initialize Database
 ```bash
-# 1. 登錄 MySQL
+# 1. Login to MySQL
 mysql -u root -p
 
-# 2. 在 MySQL 中執行
+# 2. Run in MySQL
 mysql> CREATE DATABASE piano_app;
 mysql> USE piano_app;
 mysql> source ../database/schema.sql;
 mysql> exit;
 ```
 
-或直接:
+Or directly:
 ```bash
 mysql -u root -p piano_app < ../database/schema.sql
 ```
 
 ---
 
-## ✅ 驗證安裝
+## ✅ Verify Installation
 
-### 測試 1: 檢查服務器狀態
+### Test 1: Check Server Status
 ```bash
-# 在新終端/PowerShell 運行
+# Run in new terminal/PowerShell
 curl http://localhost:5000/api/auth/parent/register -X OPTIONS -v
 
-# 預期: 返回 200 或 204 狀態碼
+# Expected: returns 200 or 204 status code
 ```
 
-### 測試 2: 家長註冊
+### Test 2: Parent Registration
 ```powershell
 # PowerShell
 $body = @{username="testuser"; email="test@example.com"; password="password123"} | ConvertTo-Json
 Invoke-WebRequest -Uri http://localhost:5000/api/auth/parent/register `
   -Method POST -Headers @{"Content-Type"="application/json"} -Body $body -UseBasicParsing
 
-# 預期: 返回 201 狀態和 {"message":"註冊成功","parent_id":1}
+# Expected: returns 201 status and {"message":"Registration successful","parent_id":1}
 ```
 
-### 測試 3: 家長登錄
+### Test 3: Parent Login
 ```powershell
 $body = @{username="testuser"; password="password123"} | ConvertTo-Json
 Invoke-WebRequest -Uri http://localhost:5000/api/auth/parent/login `
   -Method POST -Headers @{"Content-Type"="application/json"} -Body $body -UseBasicParsing
 
-# 預期: 返回 200 狀態和 access_token
+# Expected: returns 200 status and access_token
 ```
 
-更多測試見 [TESTING_REPORT.md](../TESTING_REPORT.md)
+More tests in [TESTING_REPORT.md](../TESTING_REPORT.md)
 
 ---
 
-## 🐛 常見問題排查
+## 🐛 Troubleshooting
 
-### 問題 1: 找不到 Python
+### Issue 1: Python Not Found
 ```
 Error: 'python' is not recognized as an internal or external command
 ```
-**解決方案**:
-- Windows: 確保 Python 已添加到 PATH（安裝時勾選 "Add Python to PATH"）
-- 嘗試使用 `python3` 代替 `python`
+**Solution**:
+- Windows: Make sure Python is added to PATH (check "Add Python to PATH" during installation)
+- Try using `python3` instead of `python`
 
-### 問題 2: 權限被拒絕 (激活虛擬環境失敗)
+### Issue 2: Permission Denied (Virtual Environment Activation Failed)
 ```powershell
 PS> .\venv\Scripts\Activate.ps1
-無法載入檔案 ...\Activate.ps1，因為系統上已停用指令碼執行
+Cannot load file ...\Activate.ps1 because running scripts is disabled on this system
 ```
-**解決方案**:
+**Solution**:
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
-### 問題 3: 埠 5000 已在使用
+### Issue 3: Port 5000 Already in Use
 ```
 OSError: [Errno 48] Address already in use
 ```
-**解決方案**:
+**Solution**:
 ```bash
-# 找到使用埠 5000 的進程
+# Find the process using port 5000
 # Linux/macOS:
 lsof -i :5000
 
 # Windows:
 netstat -ano | findstr :5000
 
-# 殺死進程或使用不同埠
-export FLASK_PORT=5001  # 或在 .env 中設置 FLASK_PORT=5001
+# Kill the process or use a different port
+export FLASK_PORT=5001  # or set FLASK_PORT=5001 in .env
 python app.py
 ```
 
-### 問題 4: SQLAlchemy 錯誤
+### Issue 4: SQLAlchemy Error
 ```
 ImportError: No module named 'sqlalchemy'
 ```
-**解決方案**:
-1. 確保虛擬環境已激活 (命令提示符有 `(venv)`)
-2. 重新安裝依賴:
+**Solution**:
+1. Make sure the virtual environment is activated (prompt shows `(venv)`)
+2. Reinstall dependencies:
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt --force-reinstall
 ```
 
-### 問題 5: JWT 錯誤
+### Issue 5: JWT Error
 ```
 RuntimeError: You must initialize a JWTManager with this flask application
 ```
-**解決方案**:
-- 確保使用最新的 app.py (已修復此問題)
-- 清除 Python 緩存:
+**Solution**:
+- Make sure you are using the latest app.py (this issue has been fixed)
+- Clear Python cache:
 ```bash
 rm -rf __pycache__  # Linux/macOS
 rmdir /s __pycache__  # Windows
@@ -297,30 +297,33 @@ python app.py
 
 ---
 
-## 📁 目錄結構驗證
+## 📁 Directory Structure Verification
 
-安裝完成後，您的目錄應如下所示:
+After installation, your directory should look like this:
 
 ```
 PianoAPPv1/
 ├── backend/
-│   ├── venv/                 ✅ 虛擬環境 
-│   ├── app.py                ✅ Flask 應用
-│   ├── config.py             ✅ 配置文件
-│   ├── models.py             ✅ 數據模型
-│   ├── requirements.txt       ✅ 依賴列表
-│   ├── .env.example          ✅ 環境變數示例
-│   ├── piano_app.db          ✅ SQLite 數據庫 (首次運行後創建)
+│   ├── venv/                 ✅ Virtual environment
+│   ├── instance/
+│   │   └── piano_app.db      ✅ SQLite database (created after first run)
+│   ├── app.py                ✅ Flask app
+│   ├── config.py             ✅ Config file
+│   ├── models.py             ✅ Data models
+│   ├── requirements.txt       ✅ Dependency list
+│   ├── .env.example          ✅ Environment variable example
 │   └── routes/
 │       ├── auth.py
 │       ├── practice.py
-│       └── awards.py
-├── frontend/                 (稍後安裝)
+│       ├── awards.py
+│       └── management.py
+├── frontend/
 ├── database/
 │   └── schema.sql
 ├── docs/
 │   ├── API_REFERENCE.md
 │   ├── DEPLOYMENT.md
+│   ├── TIME_HANDLING.md
 │   └── API_TESTING.md
 ├── README.md
 ├── QUICK_START.md
@@ -330,25 +333,25 @@ PianoAPPv1/
 
 ---
 
-## 🚀 下一步
+## 🚀 Next Steps
 
-安裝完成後:
+After installation:
 
-1. ✅ **測試後端** - 運行 API 測試: [API_TESTING.md](API_TESTING.md)
-2. 🎨 **前端開發** - 開始開發移動應用: [DEVELOPMENT.md](DEVELOPMENT.md)
-3. 📦 **部署** - 準備生產部署: [DEPLOYMENT.md](DEPLOYMENT.md)
-
----
-
-## 🆘 獲得幫助
-
-如遇問題:
-1. 查看 [TESTING_REPORT.md](../TESTING_REPORT.md) 了解已驗證的功能
-2. 查看 [API_REFERENCE.md](API_REFERENCE.md) 了解 API 細節
-3. 檢查 `backend/` 中的日誌文件
+1. ✅ **Test backend** - Run API tests: [API_TESTING.md](API_TESTING.md)
+2. 🎨 **Frontend development** - Build the mobile app: [DEVELOPMENT.md](DEVELOPMENT.md)
+3. 📦 **Deploy** - Production deployment: [DEPLOYMENT.md](DEPLOYMENT.md)
 
 ---
 
-**安裝版本**: 1.0  
-**最後更新**: 2026-03-22  
-**測試環境**: Python 3.13, Windows 10+, macOS 10.15+, Ubuntu 20.04+
+## 🆘 Getting Help
+
+If you encounter issues:
+1. See [TESTING_REPORT.md](../TESTING_REPORT.md) for verified features
+2. See [API_REFERENCE.md](API_REFERENCE.md) for API details
+3. Check log files in `backend/`
+
+---
+
+**Installation Version**: 1.0
+**Last Updated**: 2026-03-22
+**Tested On**: Python 3.13, Windows 10+, macOS 10.15+, Ubuntu 20.04+

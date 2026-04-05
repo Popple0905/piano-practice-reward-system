@@ -8,42 +8,42 @@ awards_bp = Blueprint('awards', __name__)
 @awards_bp.route('/give', methods=['POST'])
 @jwt_required()
 def give_game_award():
-    """家长发放游戏时间"""
+    """Parent grants reward points to a child"""
     identity = get_jwt_identity()
-    
+
     if not identity.startswith('parent_'):
-        return jsonify({'error': '只有家长可以发放游戏时间'}), 403
-    
+        return jsonify({'error': 'Only parents can grant reward points'}), 403
+
     parent_id = int(identity.split('_')[1])
-    
+
     data = request.get_json()
-    
+
     if not data or not data.get('child_id') or not data.get('game_minutes'):
-        return jsonify({'error': '缺少必要字段'}), 400
-    
+        return jsonify({'error': 'Missing required fields'}), 400
+
     parent = Parent.query.get(parent_id)
     if not parent:
-        return jsonify({'error': '家长不存在'}), 404
-    
+        return jsonify({'error': 'Parent not found'}), 404
+
     child = Child.query.get(data['child_id'])
     if not child or child.parent_id != parent_id:
-        return jsonify({'error': '孩子不存在或权限不足'}), 404
-    
-    # 增加孩子的游戏时间
+        return jsonify({'error': 'Child not found or permission denied'}), 404
+
+    # Add reward points to child's balance
     award = GameAward(
         parent_id=parent_id,
         child_id=data['child_id'],
         game_minutes=data['game_minutes'],
-        reason=data.get('reason', '') 
+        reason=data.get('reason', '')
     )
-    
+
     child.game_balance += data['game_minutes']
-    
+
     db.session.add(award)
     db.session.commit()
-    
+
     return jsonify({
-        'message': '游戏时间已发放',
+        'message': 'Reward points granted',
         'child_id': child.id,
         'game_minutes': data['game_minutes'],
         'new_balance': child.game_balance
@@ -52,80 +52,80 @@ def give_game_award():
 @awards_bp.route('/request', methods=['POST'])
 @jwt_required()
 def request_game_time():
-    """孩子申请游戏时间 (15分钟为单位)"""
+    """Child redeems reward points (in 15-min units)"""
     identity = get_jwt_identity()
-    
+
     if not identity.startswith('child_'):
-        return jsonify({'error': '只有孩子可以申请游戏时间'}), 403
-    
+        return jsonify({'error': 'Only children can redeem reward points'}), 403
+
     child_id = identity.split('_', 1)[1]
-    
+
     data = request.get_json()
-    
+
     if not data or not data.get('game_minutes'):
-        return jsonify({'error': '缺少游戏时间'}), 400
-    
-    # 验证是否以15分钟为单位
+        return jsonify({'error': 'Missing game time amount'}), 400
+
+    # Validate that amount is a multiple of 15
     if data['game_minutes'] % 15 != 0:
-        return jsonify({'error': '申请时间必须以15分钟为单位'}), 400
-    
+        return jsonify({'error': 'Redemption amount must be in 15-minute increments'}), 400
+
     child = Child.query.get(child_id)
     if not child:
-        return jsonify({'error': '孩子不存在'}), 404
-    
+        return jsonify({'error': 'Child not found'}), 404
+
     if child.game_balance < data['game_minutes']:
         return jsonify({
-            'error': '游戏时间不足',
+            'error': 'Insufficient reward points',
             'current_balance': child.game_balance,
             'requested': data['game_minutes']
         }), 400
-    
-    # 创建申请记录并扣除时间
+
+    # Create redemption record and deduct points
     request_record = GameRequest(
         child_id=child_id,
         game_minutes=data['game_minutes'],
-        status='approved'  # 自动批准
+        status='approved'  # Auto-approved
     )
-    
+
     child.game_balance -= data['game_minutes']
-    
+
     db.session.add(request_record)
     db.session.commit()
-    
+
     return jsonify({
-        'message': '游戏时间申请已批准',
+        'message': 'Reward points redeemed successfully',
         'game_minutes_used': data['game_minutes'],
         'remaining_balance': child.game_balance,
         'request_id': request_record.id,
-        'request_time': request_record.request_date.isoformat()
+        'request_time': request_record.request_date.isoformat() + 'Z'
     }), 200
 
 @awards_bp.route('/balance/<string:child_id>', methods=['GET'])
 @jwt_required()
 def get_game_balance(child_id):
-    """获取孩子的游戏时间余额"""
+    """Get a child's reward points balance"""
     identity = get_jwt_identity()
-    
+
     child = Child.query.get(child_id)
     if not child:
-        return jsonify({'error': '孩子不存在'}), 404
-    
-    # 验证权限
+        return jsonify({'error': 'Child not found'}), 404
+
+    # Verify permission
     if identity.startswith('parent_'):
         parent_id = int(identity.split('_')[1])
         parent = Parent.query.get(parent_id)
         if child not in parent.children:
-            return jsonify({'error': '权限不足'}), 403
+            return jsonify({'error': 'Permission denied'}), 403
     elif identity.startswith('child_'):
         current_child_id = identity.split('_', 1)[1]
         if current_child_id != child_id:
-            return jsonify({'error': '权限不足'}), 403
+            return jsonify({'error': 'Permission denied'}), 403
     else:
-        return jsonify({'error': '无效的token'}), 401
-    
-    # 获取家长信息用于展示兑换比例
+        return jsonify({'error': 'Invalid token'}), 401
+
+    # Get parent info for displaying the conversion ratio
     parent = child.parent
-    
+
     return jsonify({
         'child_id': child.id,
         'child_name': child.name,
@@ -136,28 +136,28 @@ def get_game_balance(child_id):
 @awards_bp.route('/history/<string:child_id>', methods=['GET'])
 @jwt_required()
 def get_award_history(child_id):
-    """获取游戏时间发放历史"""
+    """Get reward points award history for a child"""
     identity = get_jwt_identity()
-    
+
     child = Child.query.get(child_id)
     if not child:
-        return jsonify({'error': '孩子不存在'}), 404
-    
-    # 验证权限
+        return jsonify({'error': 'Child not found'}), 404
+
+    # Verify permission
     if identity.startswith('parent_'):
         parent_id = int(identity.split('_')[1])
         parent = Parent.query.get(parent_id)
         if child not in parent.children:
-            return jsonify({'error': '权限不足'}), 403
+            return jsonify({'error': 'Permission denied'}), 403
     elif identity.startswith('child_'):
         current_child_id = identity.split('_', 1)[1]
         if current_child_id != child_id:
-            return jsonify({'error': '权限不足'}), 403
+            return jsonify({'error': 'Permission denied'}), 403
     else:
-        return jsonify({'error': '无效的token'}), 401
-    
+        return jsonify({'error': 'Invalid token'}), 401
+
     awards = GameAward.query.filter_by(child_id=child_id).order_by(GameAward.created_at.desc()).all()
-    
+
     return jsonify({
         'child_id': child.id,
         'child_name': child.name,
@@ -168,7 +168,7 @@ def get_award_history(child_id):
                 'id': a.id,
                 'game_minutes': a.game_minutes,
                 'reason': a.reason,
-                'created_at': a.created_at.isoformat()
+                'created_at': a.created_at.isoformat() + 'Z'
             }
             for a in awards
         ]
@@ -177,39 +177,39 @@ def get_award_history(child_id):
 @awards_bp.route('/request-history/<string:child_id>', methods=['GET'])
 @jwt_required()
 def get_game_request_history(child_id):
-    """获取游戏时间申请历史"""
+    """Get reward points redemption history for a child"""
     identity = get_jwt_identity()
-    
+
     child = Child.query.get(child_id)
     if not child:
-        return jsonify({'error': '孩子不存在'}), 404
-    
-    # 验证权限
+        return jsonify({'error': 'Child not found'}), 404
+
+    # Verify permission
     if identity.startswith('parent_'):
         parent_id = int(identity.split('_')[1])
         parent = Parent.query.get(parent_id)
         if child not in parent.children:
-            return jsonify({'error': '权限不足'}), 403
+            return jsonify({'error': 'Permission denied'}), 403
     elif identity.startswith('child_'):
         current_child_id = identity.split('_', 1)[1]
         if current_child_id != child_id:
-            return jsonify({'error': '权限不足'}), 403
+            return jsonify({'error': 'Permission denied'}), 403
     else:
-        return jsonify({'error': '无效的token'}), 401
-    
-    # 获取查询参数
+        return jsonify({'error': 'Invalid token'}), 401
+
+    # Get query parameters
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
-    
+
     query = GameRequest.query.filter_by(child_id=child_id)
-    
+
     if start_date:
         query = query.filter(GameRequest.request_date >= datetime.fromisoformat(start_date))
     if end_date:
         query = query.filter(GameRequest.request_date <= datetime.fromisoformat(end_date))
-    
+
     requests = query.order_by(GameRequest.request_date.desc()).all()
-    
+
     return jsonify({
         'child_id': child.id,
         'child_name': child.name,
@@ -219,7 +219,7 @@ def get_game_request_history(child_id):
             {
                 'id': r.id,
                 'game_minutes': r.game_minutes,
-                'request_date': r.request_date.isoformat(),
+                'request_date': r.request_date.isoformat() + 'Z',
                 'status': r.status
             }
             for r in requests
@@ -229,12 +229,12 @@ def get_game_request_history(child_id):
 @awards_bp.route('/ratio', methods=['GET'])
 @jwt_required()
 def get_practice_to_game_ratio():
-    """获取当前的练琴-游戏时间兑换比例"""
+    """Get the current practice-to-reward conversion ratio"""
     identity = get_jwt_identity()
-    
+
     if not identity.startswith('parent_') and not identity.startswith('child_'):
-        return jsonify({'error': '无效的token'}), 401
-    
+        return jsonify({'error': 'Invalid token'}), 401
+
     if identity.startswith('parent_'):
         parent_id = int(identity.split('_')[1])
         parent = Parent.query.get(parent_id)
@@ -242,41 +242,46 @@ def get_practice_to_game_ratio():
         child_id = identity.split('_', 1)[1]
         child = Child.query.get(child_id)
         parent = child.parent
-    
+
     if not parent:
-        return jsonify({'error': '家长不存在'}), 404
-    
+        return jsonify({'error': 'Parent not found'}), 404
+
+    ratio = parent.practice_to_game_ratio
+    ratio_display = int(ratio) if ratio == int(ratio) else ratio
+
     return jsonify({
-        'practice_to_game_ratio': parent.practice_to_game_ratio,
-        'description': f'1分鐘練琴兌換{int(parent.practice_to_game_ratio) if parent.practice_to_game_ratio == int(parent.practice_to_game_ratio) else parent.practice_to_game_ratio}分鐘遊戲時間'
+        'practice_to_game_ratio': ratio,
+        'description': f'1 min practice = {ratio_display} reward point(s)'
     }), 200
 
 @awards_bp.route('/ratio', methods=['POST'])
 @jwt_required()
 def set_practice_to_game_ratio():
-    """家长设置练琴-游戏时间兑换比例"""
+    """Parent sets the practice-to-reward conversion ratio"""
     identity = get_jwt_identity()
-    
+
     if not identity.startswith('parent_'):
-        return jsonify({'error': '只有家长可以设置兑换比例'}), 403
-    
+        return jsonify({'error': 'Only parents can set the conversion ratio'}), 403
+
     parent_id = int(identity.split('_')[1])
-    
+
     data = request.get_json()
-    
+
     if not data or not data.get('ratio') or data['ratio'] <= 0:
-        return jsonify({'error': '无效的兑换比例'}), 400
-    
+        return jsonify({'error': 'Invalid conversion ratio'}), 400
+
     parent = Parent.query.get(parent_id)
     if not parent:
-        return jsonify({'error': '家长不存在'}), 404
-    
+        return jsonify({'error': 'Parent not found'}), 404
+
     parent.practice_to_game_ratio = float(data['ratio'])
     db.session.commit()
-    
-    return jsonify({
-        'message': '兑换比例已更新',
-        'new_ratio': parent.practice_to_game_ratio,
-        'description': f'1分鐘練琴兌換{int(parent.practice_to_game_ratio) if parent.practice_to_game_ratio == int(parent.practice_to_game_ratio) else parent.practice_to_game_ratio}分鐘遊戲時間'
-    }), 200
 
+    ratio = parent.practice_to_game_ratio
+    ratio_display = int(ratio) if ratio == int(ratio) else ratio
+
+    return jsonify({
+        'message': 'Conversion ratio updated',
+        'new_ratio': ratio,
+        'description': f'1 min practice = {ratio_display} reward point(s)'
+    }), 200

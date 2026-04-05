@@ -1,58 +1,58 @@
-# 部署指南
+# Deployment Guide
 
-## 本地开发环境部署
+## Local Development Environment
 
-### 1. 后端部署
+### 1. Backend Setup
 
-#### 1.1 安装MySQL
+#### 1.1 Install MySQL (optional, SQLite is used by default)
 ```bash
-# Windows - 通过 chocolatey
+# Windows - via chocolatey
 choco install mysql
 
-# macOS - 通过 Homebrew
+# macOS - via Homebrew
 brew install mysql
 
 # Linux (Ubuntu)
 sudo apt-get install mysql-server
 ```
 
-#### 1.2 创建数据库
+#### 1.2 Create Database (MySQL only)
 ```bash
 mysql -u root -p < database/schema.sql
 ```
 
-#### 1.3 安装Python依赖
+#### 1.3 Install Python Dependencies
 ```bash
 cd backend
 pip install -r requirements.txt
 ```
 
-#### 1.4 配置环境变量
-复制 `.env.example` 为 `.env` 并配置数据库连接字符串：
+#### 1.4 Configure Environment Variables
+Copy `.env.example` to `.env` and configure the database connection string:
 ```
 DATABASE_URL=mysql+pymysql://root:your_password@localhost/piano_app
 ```
 
-#### 1.5 启动后端服务
+#### 1.5 Start Backend Service
 ```bash
 python app.py
 ```
 
-## 生产环境部署
+## Production Deployment
 
-### 使用 Gunicorn + Nginx
+### Using Gunicorn + Nginx
 
-#### 1. 安装 Gunicorn
+#### 1. Install Gunicorn
 ```bash
 pip install gunicorn
 ```
 
-#### 2. 启动 Gunicorn
+#### 2. Start Gunicorn
 ```bash
 gunicorn -w 4 -b 0.0.0.0:5000 app:create_app()
 ```
 
-#### 3. Nginx 配置
+#### 3. Nginx Configuration
 ```nginx
 server {
     listen 80;
@@ -68,9 +68,9 @@ server {
 }
 ```
 
-### Docker 部署 (可选)
+### Docker Deployment (optional)
 
-创建 `Dockerfile`:
+Create a `Dockerfile`:
 ```dockerfile
 FROM python:3.10-slim
 
@@ -84,41 +84,41 @@ COPY . .
 CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:create_app()"]
 ```
 
-构建和运行：
+Build and run:
 ```bash
 docker build -t piano-app-backend .
 docker run -p 5000:5000 piano-app-backend
 ```
 
-## 前端部署
+## Frontend Deployment
 
-### iOS 应用发布
+### iOS App Release
 ```bash
 cd frontend/PianoApp
 npx react-native run-ios --release
 ```
 
-### Android 应用发布
+### Android App Release
 ```bash
 cd frontend/PianoApp
 npx react-native run-android --variant=release
 ```
 
-## 数据库备份
+## Database Backup
 
-### 手动备份
+### Manual Backup
 ```bash
 mysqldump -u root -p piano_app > backup_$(date +%Y%m%d_%H%M%S).sql
 ```
 
-### 恢复备份
+### Restore Backup
 ```bash
 mysql -u root -p piano_app < backup_file.sql
 ```
 
-## 监控和日志
+## Monitoring and Logging
 
-### 配置日志
+### Configure Logging
 ```python
 import logging
 
@@ -129,21 +129,21 @@ logging.basicConfig(
 )
 ```
 
-## 安全建议
+## Security Recommendations
 
-1. **HTTPS** - 配置SSL/TLS证书
-2. **密码** - 使用强密码和密码哈希算法
-3. **API限流** - 实现速率限制防止滥用
-4. **定期备份** - 自动每日备份数据库
-5. **更新依赖** - 定期更新第三方库
-6. **隐私保护** - 遵守GDPR和个人信息保护法规
+1. **HTTPS** - Configure SSL/TLS certificate
+2. **Passwords** - Use strong passwords and password hashing
+3. **Rate Limiting** - Implement rate limiting to prevent abuse
+4. **Regular Backups** - Automated daily database backups
+5. **Update Dependencies** - Regularly update third-party libraries
+6. **Privacy Protection** - Comply with GDPR and personal data protection regulations
 
-## 扩展建议
+## Scaling Suggestions
 
-当用户量增长时：
+As user volume grows:
 
-1. 添加缓存层 (Redis)
-2. 使用数据库主从复制
-3. 实现CDN加速
-4. 添加消息队列 (RabbitMQ/Kafka)
-5. 微服务架构重构
+1. Add caching layer (Redis)
+2. Use database primary-replica replication
+3. Implement CDN acceleration
+4. Add message queue (RabbitMQ/Kafka)
+5. Refactor to microservices architecture

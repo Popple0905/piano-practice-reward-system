@@ -1,94 +1,94 @@
-# PianoAPP v1 - 快速开始指南
+# PianoAPP v1 - Quick Start Guide
 
-## 📋 项目概述
+## 📋 Project Overview
 
-**PianoAPP** 是一个家长-孩子互动的练琴时间管理系统，让孩子通过记录每日练琴时间来赚取游戏时间奖励。
+**PianoAPP** is a parent-child interactive piano practice management system where children earn reward points by logging daily practice sessions.
 
-### 主要特性
-✅ **孩子账户** - 记录每日练琴时间和内容  
-✅ **家长控制面板** - 查看孩子成绩、发放游戏奖励  
-✅ **数据统计** - 周/月/年练琴数据分析  
-✅ **游戏时间管理** - 积分制度管理  
-✅ **安全认证** - JWT Token身份验证  
+### Key Features
+✅ **Child Accounts** - Log daily practice time and notes
+✅ **Parent Dashboard** - View children's progress, grant reward points
+✅ **Statistics** - Weekly/monthly/yearly practice data analysis
+✅ **Reward Points Management** - Point-based incentive system
+✅ **Secure Authentication** - JWT Token verification
 
 ---
 
-## 🚀 5分钟快速开始
+## 🚀 5-Minute Quick Start
 
-### 第一步：准备环境
+### Step 1: Set Up Environment
 
-#### 安装必需软件
-1. **Python 3.10+** ✅ 已验证 Python 3.13
-   - 下载: https://www.python.org/
-   - 验证: `python --version`
+#### Install Required Software
+1. **Python 3.10+** ✅ Verified with Python 3.13
+   - Download: https://www.python.org/
+   - Verify: `python --version`
 
-2. **Git** (可选)
-   - 下载: https://git-scm.com/
+2. **Git** (optional)
+   - Download: https://git-scm.com/
 
-**注意**: 本地开发使用 SQLite，无需安装 MySQL。生产环境可配置为 MySQL。
+**Note**: Local development uses SQLite — no MySQL installation needed. MySQL can be configured for production.
 
-### 第二步：设置后端
+### Step 2: Set Up Backend
 
 ```bash
-# 1. 进入backend目录
+# 1. Enter backend directory
 cd PianoAPPv1\backend
 
-# 2. 创建Python虚拟环境
+# 2. Create Python virtual environment
 python -m venv venv
 venv\Scripts\activate  # Windows
 source venv/bin/activate  # macOS/Linux
 
-# 3. 安装依赖
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. (可选) 配置环境变量 - 创建.env文件
+# 4. (Optional) Configure environment variables - create .env file
 # FLASK_ENV=development
 # JWT_SECRET_KEY=your-secret-key
-# 其他环境变量可选，将使用默认值
+# Other environment variables are optional and will use defaults
 
-# 5. 启动服务器
+# 5. Start server
 python app.py
 ```
 
-✅ 服务器运行在 `http://localhost:5000`
-✅ 数据库自动使用 SQLite (piano_app.db 在 backend/instance/ 目录)
-✅ 首次运行需要初始化测试数据：`python backend/init_db.py`
+✅ Server running at `http://localhost:5000`
+✅ Database auto-uses SQLite (piano_app.db in backend/instance/)
+✅ First run: initialize test data with `python init_db.py`
 
-### 第三步：访问前端登入页面
+### Step 3: Access the Frontend
 
-✨ **前端已集成！直接访问 Web 界面登入测试：**
+✨ **Frontend is integrated — open the web interface directly:**
 
-1. **打开浏览器** → 访问 `http://localhost:5000`
-2. **登入测试账户**
-   - 孩子：孩子 ID `1` / 密码 `child123`
-   - ✅ 系统已自动创建测试账户（运行 `python init_db.py`）
-3. **测试功能**
-   - ✅ 记录练琴时间（5分钟单位）
-   - ✅ 查看多筆練琴紀錄（已修正显示全部记录）
-   - ✅ 时间舍入（无效时间自动调整到最近5分钟）
-   - ✅ 查询游戏余额
-   - ✅ 本地时间定位（自动检测系统时区）
+1. **Open browser** → go to `http://localhost:5000`
+2. **Login with test accounts**
+   - Child: ID `1` / password `child123`
+   - ✅ Test accounts created automatically (run `python init_db.py`)
+3. **Test features**
+   - ✅ Log practice time (15-minute units)
+   - ✅ View multiple practice records
+   - ✅ Time rounding (invalid times auto-adjusted to nearest 5 min)
+   - ✅ Query reward points balance
+   - ✅ Local time detection (auto-detects system timezone)
 
-### 第四步：API 测试（可选）
+### Step 4: API Testing (optional)
 
-打开终端/PowerShell 执行 API 测试（已验证工作正常）：
+Open terminal/PowerShell to run API tests (verified working):
 
-#### PowerShell 测试脚本
+#### PowerShell Test Script
 
 ```powershell
-# 家长登录
+# Parent login
 $body = @{username="parent2024"; password="securepass123"} | ConvertTo-Json
 Invoke-WebRequest -Uri http://localhost:5000/api/auth/parent/login `
   -Method POST -Headers @{"Content-Type"="application/json"} -Body $body -UseBasicParsing | Select-Object -ExpandProperty Content
 
-# 返回示例:
+# Example response:
 # {"access_token":"eyJ...","parent_id":2,"username":"parent2024"}
 ```
 
-#### Bash/curl 测试脚本
+#### Bash/curl Test Script
 
 ```bash
-# 家长登录
+# Parent login
 curl -X POST http://localhost:5000/api/auth/parent/login \
   -H "Content-Type: application/json" \
   -d '{
@@ -97,26 +97,26 @@ curl -X POST http://localhost:5000/api/auth/parent/login \
   }'
 ```
 
-🎉 详见 [TESTING_REPORT.md](TESTING_REPORT.md) 获取完整的测试结果
+🎉 See [TESTING_REPORT.md](TESTING_REPORT.md) for the full test results
 
 ---
 
-## 📱 前端开发
+## 📱 Frontend Development
 
-### React Native (推荐小白)
+### React Native (recommended for beginners)
 
 ```bash
-# 1. 安装 Node.js (https://nodejs.org/)
+# 1. Install Node.js (https://nodejs.org/)
 
-# 2. 创建React Native项目
+# 2. Create React Native project
 cd frontend
 npx react-native init PianoApp
 cd PianoApp
 
-# 3. 安装依赖
+# 3. Install dependencies
 npm install axios @react-native-async-storage/async-storage
 
-# 4. 运行应用
+# 4. Run the app
 # iOS
 npx react-native run-ios
 
@@ -124,47 +124,47 @@ npx react-native run-ios
 npx react-native run-android
 ```
 
-### Flutter (推荐高性能)
+### Flutter (recommended for performance)
 
 ```bash
-# 1. 安装Flutter (https://flutter.dev/docs/get-started/install)
+# 1. Install Flutter (https://flutter.dev/docs/get-started/install)
 
-# 2. 创建项目
+# 2. Create project
 cd frontend
 flutter create piano_app
 cd piano_app
 
-# 3. 安装依赖 (在pubspec.yaml中添加)
+# 3. Add dependencies (in pubspec.yaml)
 # dependencies:
 #   http: ^1.1.0
 #   shared_preferences: ^2.2.0
 
 flutter pub get
 
-# 4. 运行应用
+# 4. Run the app
 flutter run
 ```
 
 ---
 
-## 📊 数据流示意图
+## 📊 System Architecture Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    PianoAPP 系统架构                      │
+│                  PianoAPP System Architecture            │
 ├─────────────────────────────────────────────────────────┤
 │                                                          │
 │  ┌──────────┐              ┌──────────┐                │
-│  │ 孩子 APP  │              │ 家长 APP  │                │
-│  │ (Child)   │              │ (Parent)  │                │
+│  │ Child APP │              │ Parent   │                │
+│  │           │              │ APP      │                │
 │  └─────┬────┘              └────┬─────┘                │
 │        │                        │                       │
-│        │ 记录练琴  │  发放奖励    │                       │
+│        │  log practice  │  grant rewards │              │
 │        └─────────┬──────────────┘                       │
 │                  │                                      │
 │                  ▼                                      │
 │        ┌─────────────────┐                             │
-│        │   Flask 后端     │                             │
+│        │   Flask Backend  │                             │
 │        │   (REST API)    │                             │
 │        └────────┬────────┘                             │
 │                 │                                      │
@@ -172,8 +172,8 @@ flutter run
 │    │            │            │                         │
 │    ▼            ▼            ▼                         │
 │  ┌────────┐ ┌────────┐ ┌──────────┐                    │
-│  │ 练琴   │ │孩子   │ │ 游戏时间 │                    │
-│  │ 数据库  │ │数据库 │ │ 数据库   │                    │
+│  │Practice│ │Child   │ │ Rewards  │                    │
+│  │  DB    │ │  DB    │ │   DB     │                    │
 │  └────────┘ └────────┘ └──────────┘                    │
 │                                                          │
 └─────────────────────────────────────────────────────────┘
@@ -181,105 +181,105 @@ flutter run
 
 ---
 
-## 🔑 核心 API 端点
+## 🔑 Core API Endpoints
 
-| 功能 | 方法 | 端点 | 说明 |
-|------|------|------|------|
-| 家长注册 | POST | `/api/auth/parent/register` | 创建家长账号 |
-| 家长登录 | POST | `/api/auth/parent/login` | 家长身份验证 |
-| 孩子注册 | POST | `/api/auth/child/register` | 创建孩子账号 |
-| 孩子登录 | POST | `/api/auth/child/login` | 孩子身份验证 |
-| 添加练琴 | POST | `/api/practice/record` | 孩子记录今日练琴 |
-| 查看成绩 | GET | `/api/practice/records/<child_id>` | 查看练琴记录 |
-| 数据统计 | GET | `/api/practice/statistics/<child_id>` | 查看统计数据 |
-| 发放奖励 | POST | `/api/awards/give` | 家长发放游戏时间 |
-| 查询积分 | GET | `/api/awards/balance/<child_id>` | 查看游戏时间余额 |
+| Feature | Method | Endpoint | Description |
+|---------|--------|----------|-------------|
+| Register Parent | POST | `/api/auth/parent/register` | Create parent account |
+| Parent Login | POST | `/api/auth/parent/login` | Parent authentication |
+| Register Child | POST | `/api/auth/child/register` | Create child account |
+| Child Login | POST | `/api/auth/child/login` | Child authentication |
+| Add Practice | POST | `/api/practice/record` | Child logs today's practice |
+| View Records | GET | `/api/practice/records/<child_id>` | View practice records |
+| Statistics | GET | `/api/practice/statistics/<child_id>` | View statistics |
+| Grant Reward | POST | `/api/awards/give` | Parent grants reward points |
+| Check Balance | GET | `/api/awards/balance/<child_id>` | View reward points balance |
 
 ---
 
-## 📝 配置文件说明
+## 📝 Configuration Files
 
 ### backend/.env
 ```
-FLASK_ENV=development          # 开发/生产环境
+FLASK_ENV=development          # development / production
 DATABASE_URL=mysql+pymysql://root:password@localhost/piano_app
 JWT_SECRET_KEY=your-secret-key-change-in-production
-SERVER_PORT=5000              # 默认端口
+SERVER_PORT=5000              # default port
 ```
 
 ### frontend/apiClient.js
 ```javascript
 const API_BASE_URL = 'http://localhost:5000/api';
-// 改为你的服务器地址
+// Change to your server address
 ```
 
 ---
 
-## ✨ 核心功能详解
+## ✨ Core Features
 
-### 1️⃣ 孩子端
-- **记录练琴**: 输入今日练琴时间和内容
-- **查看积分**: 实时显示可用游戏时间
-- **成绩追踪**: 查看历史练琴记录
+### 1️⃣ Child Side
+- **Log Practice**: Enter today's practice duration and notes
+- **View Points**: Real-time display of available reward points
+- **Track History**: View practice record history
 
-### 2️⃣ 家长端
-- **监督成绩**: 看每个孩子的练琴进度
-- **数据分析**: 统计周月年的练琴时间
-- **发放奖励**: 根据表现发放游戏时间
+### 2️⃣ Parent Side
+- **Monitor Progress**: View each child's practice progress
+- **Data Analysis**: Weekly/monthly/yearly practice statistics
+- **Grant Rewards**: Award reward points based on performance
 
-### 3️⃣ 激励机制
+### 3️⃣ Incentive System
 ```
-练琴30分钟 → 赚取30分钟游戏时间
-            ↓
-         孩子可用来玩游戏
+30 min practice → earn 30 reward points
+                  ↓
+         child redeems for game time
 ```
 
 ---
 
-## 🐛 常见问题
+## 🐛 Common Issues
 
-### Q1: 无法连接数据库
-**A:** 检查MySQL是否正在运行
+### Q1: Cannot connect to database
+**A:** Check if MySQL is running
 ```bash
 # macOS
 mysql.server status
 
-# Windows (powershell)
-Get-Service MySQL80  # 或对应版本
+# Windows (PowerShell)
+Get-Service MySQL80  # or corresponding version
 ```
 
-### Q2: 找不到模块 Flask
-**A:** 确认虚拟环境已激活并安装依赖
+### Q2: Module Flask not found
+**A:** Confirm the virtual environment is activated and dependencies installed
 ```bash
-which python  # 应显示venv路径
+which python  # should show venv path
 pip install -r requirements.txt
 ```
 
-### Q3: 前端无法连接后端
-**A:** 检查
-1. 后端是否运行在 `localhost:5000`
-2. 前端 `apiClient.js` 中的 `API_BASE_URL` 是否正确
-3. 防火墙设置
+### Q3: Frontend cannot connect to backend
+**A:** Check
+1. Is backend running at `localhost:5000`
+2. Is `API_BASE_URL` in frontend `apiClient.js` correct
+3. Firewall settings
 
 ---
 
-## 📚 下一步
+## 📚 Next Steps
 
-1. **完成后端测试** → 使用 [API_TESTING.md](../docs/API_TESTING.md) 中的脚本
-2. **开发前端应用** → 参考 [DEVELOPMENT.md](DEVELOPMENT.md)
-3. **部署上线** → 参考 [DEPLOYMENT.md](../docs/DEPLOYMENT.md)
-4. **添加新功能** → 查看功能规划部分
-
----
-
-## 📞 技术支持
-
-遇到问题？检查以下资源：
-- 📖 查看 [README.md](../README.md)
-- 🧪 查看 [API_TESTING.md](../docs/API_TESTING.md)
-- 🚀 查看 [DEPLOYMENT.md](../docs/DEPLOYMENT.md)
-- 💻 查看 [DEVELOPMENT.md](DEVELOPMENT.md)
+1. **Complete backend testing** → Use scripts in [API_TESTING.md](../docs/API_TESTING.md)
+2. **Develop frontend app** → See [DEVELOPMENT.md](DEVELOPMENT.md)
+3. **Deploy** → See [DEPLOYMENT.md](../docs/DEPLOYMENT.md)
+4. **Add new features** → See the feature roadmap section
 
 ---
 
-**祝您使用愉快！🎉**
+## 📞 Support
+
+Having issues? Check these resources:
+- 📖 See [README.md](../README.md)
+- 🧪 See [API_TESTING.md](../docs/API_TESTING.md)
+- 🚀 See [DEPLOYMENT.md](../docs/DEPLOYMENT.md)
+- 💻 See [DEVELOPMENT.md](DEVELOPMENT.md)
+
+---
+
+**Happy coding! 🎉**
