@@ -57,5 +57,7 @@ def create_app(config_name='development'):
     return app
 
 if __name__ == '__main__':
-    app = create_app('development')
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    env = 'production' if os.getenv('RAILWAY_ENVIRONMENT') else 'development'
+    app = create_app(env)
+    port = int(os.getenv('PORT', 5000))
+    app.run(debug=(env == 'development'), host='0.0.0.0', port=port)

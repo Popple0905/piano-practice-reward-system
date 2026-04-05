@@ -12,3 +12,4 @@ venv/
 .venv/
 *.db
 instance/
+backend/migration_data.sql
