@@ -1,0 +1,5 @@
+[phases.install]
+cmds = ["pip install -r backend/requirements.txt"]
+
+[start]
+cmd = "gunicorn --chdir backend \"app:create_app('production')\" --bind 0.0.0.0:$PORT --workers 2"
