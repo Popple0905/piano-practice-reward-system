@@ -1,4 +1,5 @@
 import re
+import uuid
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash
@@ -50,8 +51,7 @@ def create_child():
         age=data.get('age'),
         password_hash=generate_password_hash(data['password'])
     )
-    if custom_id:
-        child_kwargs['id'] = custom_id
+    child_kwargs['id'] = custom_id if custom_id else uuid.uuid4().hex[:8]
 
     child = Child(**child_kwargs)
     db.session.add(child)

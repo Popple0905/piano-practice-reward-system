@@ -137,10 +137,11 @@ def get_parent_info():
     """Get current parent information"""
     identity = get_jwt_identity()
 
-    if identity['user_type'] != 'parent':
+    if not identity.startswith('parent_'):
         return jsonify({'error': 'Permission denied'}), 403
 
-    parent = Parent.query.get(identity['user_id'])
+    parent_id = int(identity.split('_', 1)[1])
+    parent = Parent.query.get(parent_id)
 
     if not parent:
         return jsonify({'error': 'User not found'}), 404
