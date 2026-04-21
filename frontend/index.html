@@ -232,6 +232,7 @@
         }
 
         .form-group input,
+        .form-group select,
         .form-group textarea {
             width: 100%;
             padding: 11px 14px;
@@ -244,10 +245,13 @@
             transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
         }
 
+        .form-group select { cursor: pointer; appearance: auto; }
+
         .form-group input::placeholder,
         .form-group textarea::placeholder { color: var(--text-subdued); }
 
         .form-group input:focus,
+        .form-group select:focus,
         .form-group textarea:focus {
             outline: none;
             border-color: var(--accent);
@@ -321,6 +325,7 @@
         }
 
         .submit-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; filter: none; }
+        .submit-btn--success { background: linear-gradient(135deg, #34c97a 0%, #1faa60 100%) !important; box-shadow: 0 4px 14px rgba(31,170,96,0.35) !important; opacity: 1 !important; }
 
         .action-btn {
             padding: 10px 16px;
@@ -970,6 +975,7 @@
                             <h3>👧 我的孩子</h3>
                             <div id="childrenListContainer" style="margin-top: 20px;"></div>
                         </div>
+                        <div id="childPracticeDetail" style="display: none; margin-top: 16px;"></div>
                     </div>
 
                     <!-- 待批準記錄 -->
@@ -1111,14 +1117,13 @@
                                     <input type="date" id="practiceDate">
                                 </div>
                                 <div class="form-group">
-                                    <label for="practiceTime">時間 (五分鐘單位)</label>
-                                    <input type="time" id="practiceTime" step="300">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="practiceMinutes">練琴時間 (15分鐘單位)</label>
-                                    <input type="number" id="practiceMinutes" placeholder="例: 30" min="15" step="15" value="15">
+                                    <label for="practiceMinutes">練琴時間</label>
+                                    <select id="practiceMinutes">
+                                        <option value="15">15 分鐘</option>
+                                        <option value="30" selected>30 分鐘</option>
+                                        <option value="45">45 分鐘</option>
+                                        <option value="60">60 分鐘</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="form-row full">
@@ -1127,7 +1132,7 @@
                                     <textarea id="practiceNotes" placeholder="記錄今天練習的曲目和內容..."></textarea>
                                 </div>
                             </div>
-                            <button class="submit-btn" onclick="submitPracticeRecord()">提交練琴記錄</button>
+                            <button class="submit-btn" id="submitPracticeBtn" onclick="submitPracticeRecord()">提交練琴記錄</button>
                         </div>
                         <div id="submitPracticeResult"></div>
                     </div>
@@ -1478,39 +1483,130 @@
                             <div class="child-stat-label">總記錄</div>
                         </div>
                     </div>
-                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
-                        <button class="submit-btn" style="width: 100%; background: #28a745;" onclick="event.stopPropagation(); showRewardDialog('${child.id}', '${child.name}')">
-                            🎁 獎勵練琴點數
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; display: flex; gap: 8px;">
+                        <button class="submit-btn" style="flex: 1;" onclick="event.stopPropagation(); selectChildForParent('${child.id}', '${child.name}')">
+                            📋 練琴紀錄
+                        </button>
+                        <button class="submit-btn" style="flex: 1; background: #28a745;" onclick="event.stopPropagation(); showRewardDialog('${child.id}', '${child.name}')">
+                            🎁 獎勵點數
                         </button>
                     </div>
                 </div>
             `).join('');
         }
 
-        // 家長選擇孩子
-        async function selectChildForParent(childId, childName) {
+        // 目前展開的孩子練琴紀錄狀態
+        let currentChildPracticeId = null;
+        let currentChildPracticeName = null;
+
+        // 家長選擇孩子 → 展開練琴紀錄面板
+        function selectChildForParent(childId, childName) {
+            currentChildPracticeId = childId;
+            currentChildPracticeName = childName;
+            loadChildPracticeRecords(childId, childName, '');
+            setTimeout(() => {
+                const detail = document.getElementById('childPracticeDetail');
+                if (detail) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+
+        // 載入指定孩子的練琴紀錄（可依狀態篩選）
+        async function loadChildPracticeRecords(childId, childName, statusFilter) {
+            const detail = document.getElementById('childPracticeDetail');
+            detail.style.display = 'block';
+            detail.innerHTML = `<div class="form-section"><p style="text-align:center;color:#999;">載入中...</p></div>`;
+
             try {
-                const response = await fetch(`${API_BASE_URL}/practice/records/${childId}`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${currentToken}`,
-                        'Content-Type': 'application/json'
-                    }
+                let url = `${API_BASE_URL}/practice/records/${childId}`;
+                if (statusFilter) url += `?status=${statusFilter}`;
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
                 });
-
-                if (!response.ok) {
-                    throw new Error('無法獲取孩子的記錄');
-                }
-
+                if (!response.ok) throw new Error('無法獲取練琴記錄');
                 const data = await response.json();
-                console.log(`📋 ${childName} 的練琴記錄:`, data);
 
-                // 建立一個模態框或展開式面板來顯示孩子的詳細信息
-                alert(`${childName} 的練琴記錄:\n待批準: ${data.pending_records}\n已批准: ${data.approved_records}\n總計: ${data.total_records}`);
+                const filters = [
+                    { value: '', label: '全部' },
+                    { value: 'pending', label: '待批準' },
+                    { value: 'approved', label: '已批准' },
+                    { value: 'rejected', label: '已拒絕' },
+                ];
+                const filterHtml = filters.map(f => `
+                    <button onclick="loadChildPracticeRecords('${childId}', '${childName}', '${f.value}')"
+                        style="padding:5px 14px;border-radius:20px;border:1px solid #667eea;cursor:pointer;font-size:13px;
+                               background:${f.value === statusFilter ? '#667eea' : 'white'};
+                               color:${f.value === statusFilter ? 'white' : '#667eea'};">
+                        ${f.label}
+                    </button>`).join('');
+
+                const statusLabel = { pending: '待批準', approved: '已批准', rejected: '已拒絕' };
+                const statusClass = { pending: 'pending', approved: 'approved', rejected: 'rejected' };
+
+                const recordsHtml = data.records.length === 0
+                    ? '<p style="text-align:center;color:#999;padding:20px;">暫無符合的記錄</p>'
+                    : data.records.map(r => `
+                        <div class="record-item">
+                            <div class="record-header">
+                                <div>
+                                    <div class="record-date">${r.date}</div>
+                                    <div style="font-size:13px;color:#999;margin-top:3px;">
+                                        時間: ${r.time ? r.time.substring(0, 5) : '未設置'} | 練琴: ${r.practice_minutes} 分鐘
+                                    </div>
+                                </div>
+                                <div class="record-status ${statusClass[r.status] || r.status}">
+                                    ${statusLabel[r.status] || r.status}
+                                </div>
+                            </div>
+                            ${r.notes ? `<div class="record-details">備註: ${r.notes}</div>` : ''}
+                            ${r.status === 'pending' ? `
+                            <div class="record-action-buttons">
+                                <button class="record-action-btn approve" onclick="approveRecord(${r.id})">✓ 批準</button>
+                                <button class="record-action-btn reject" onclick="rejectRecord(${r.id})">✗ 拒絕</button>
+                            </div>` : ''}
+                        </div>`).join('');
+
+                detail.innerHTML = `
+                    <div class="form-section">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                            <h3 style="margin:0;">📋 ${childName} 的練琴紀錄</h3>
+                            <button onclick="closeChildPracticeDetail()"
+                                style="background:none;border:none;font-size:22px;cursor:pointer;color:#999;line-height:1;">✕</button>
+                        </div>
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+                            <div style="background:#f0f4ff;border-radius:8px;padding:10px 18px;text-align:center;">
+                                <div style="font-size:20px;font-weight:600;color:#667eea;">${data.total_records}</div>
+                                <div style="font-size:12px;color:#999;">總記錄</div>
+                            </div>
+                            <div style="background:#fff3cd;border-radius:8px;padding:10px 18px;text-align:center;">
+                                <div style="font-size:20px;font-weight:600;color:#e0a800;">${data.pending_records}</div>
+                                <div style="font-size:12px;color:#999;">待批準</div>
+                            </div>
+                            <div style="background:#d4edda;border-radius:8px;padding:10px 18px;text-align:center;">
+                                <div style="font-size:20px;font-weight:600;color:#28a745;">${data.approved_records}</div>
+                                <div style="font-size:12px;color:#999;">已批准</div>
+                            </div>
+                            <div style="background:#e8f4f8;border-radius:8px;padding:10px 18px;text-align:center;">
+                                <div style="font-size:20px;font-weight:600;color:#17a2b8;">${data.total_approved_minutes}</div>
+                                <div style="font-size:12px;color:#999;">總練琴(分)</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">${filterHtml}</div>
+                        <div>${recordsHtml}</div>
+                    </div>`;
 
             } catch (error) {
-                showError('無法加載孩子的記錄: ' + error.message);
+                detail.innerHTML = `<div class="form-section"><p style="color:red;">載入失敗：${error.message}</p></div>`;
             }
+        }
+
+        // 關閉練琴紀錄面板
+        function closeChildPracticeDetail() {
+            const detail = document.getElementById('childPracticeDetail');
+            detail.style.display = 'none';
+            detail.innerHTML = '';
+            currentChildPracticeId = null;
+            currentChildPracticeName = null;
         }
 
         // 加載待批準的記錄
@@ -1678,10 +1774,14 @@
                 const data = await response.json();
                 console.log('✅ 記錄已批準:', data);
                 showSuccess(`✓ 記錄已批准！孩子獲得 ${data.game_minutes_earned} 點練琴獎勵點數`);
-                
+
                 // 重新加載待批準記錄
                 loadPendingRecords();
                 loadParentDashboard(currentUserId);
+                // 若練琴紀錄面板已展開，同步刷新
+                if (currentChildPracticeId) {
+                    loadChildPracticeRecords(currentChildPracticeId, currentChildPracticeName, '');
+                }
 
             } catch (error) {
                 showError('批準失敗: ' + error.message);
@@ -1705,10 +1805,14 @@
                 }
 
                 showSuccess('✗ 記錄已拒絕');
-                
+
                 // 重新加載待批準記錄
                 loadPendingRecords();
                 loadParentDashboard(currentUserId);
+                // 若練琴紀錄面板已展開，同步刷新
+                if (currentChildPracticeId) {
+                    loadChildPracticeRecords(currentChildPracticeId, currentChildPracticeName, '');
+                }
 
             } catch (error) {
                 showError('拒絕失敗: ' + error.message);
@@ -2074,36 +2178,9 @@
 
         // 加載孩子端儀表板
         function loadChildDashboard(childId) {
-            const today = new Date();
-            document.getElementById('practiceDate').valueAsDate = today;
-            
-            // 設置預設時間為當前本地時間（四舍五入到最近的5分鐘倍數）
-            const now = new Date();
-            const minutes = Math.round(now.getMinutes() / 5) * 5;
-            let hours = now.getHours();
-            let roundedMinutes = minutes;
-            
-            // 處理舍入導致的小時變化
-            if (roundedMinutes >= 60) {
-                hours = (hours + 1) % 24;  // 處理午夜溢出
-                roundedMinutes = 0;
-            }
-            
-            const timeString = String(hours).padStart(2, '0') + ':' + String(roundedMinutes).padStart(2, '0');
-            document.getElementById('practiceTime').value = timeString;
-            
-            // 🔍 調試：顯示時間初始化信息
-            console.log('⏰ 時間初始化:', {
-                系統時間: now.toString(),
-                extractedHours: now.getHours(),
-                extractedMinutes: now.getMinutes(),
-                舍入後分鐘: roundedMinutes,
-                最終小時: hours,
-                時間輸入值: timeString,
-                時區偏移: now.getTimezoneOffset(),
-                本地時區: Intl.DateTimeFormat().resolvedOptions().timeZone
-            });
-            
+            document.getElementById('practiceDate').valueAsDate = new Date();
+            const lastNotes = localStorage.getItem(`lastPracticeNotes_${childId}`);
+            if (lastNotes) document.getElementById('practiceNotes').value = lastNotes;
             loadPracticeRecords(childId);
             loadGameBalance(childId);
         }
@@ -2143,44 +2220,18 @@
 
         // 提交練琴記錄
         async function submitPracticeRecord() {
+            const btn = document.getElementById('submitPracticeBtn');
             try {
                 if (!currentToken) throw new Error('未登入');
 
                 const date = document.getElementById('practiceDate').value;
-                let time = document.getElementById('practiceTime').value;
                 const minutes = parseInt(document.getElementById('practiceMinutes').value);
                 const notes = document.getElementById('practiceNotes').value;
 
                 if (!date) throw new Error('請選擇日期');
-                if (!minutes || minutes < 15) throw new Error('練琴時間至少 15 分鐘');
-                if (minutes % 15 !== 0) throw new Error('練琴時間必須以 15 分鐘為單位');
 
-                // 驗證時間格式並四舍五入到5分鐘倍數
-                if (time) {
-                    const [hours, mins] = time.split(':').map(Number);
-                    const roundedMins = Math.round(mins / 5) * 5;
-                    const finalHours = roundedMins === 60 ? hours + 1 : hours;
-                    const finalMins = roundedMins === 60 ? 0 : roundedMins;
-                    
-                    // 確保小時不超過23
-                    if (finalHours > 23) {
-                        throw new Error('時間超出範圍');
-                    }
-                    
-                    time = String(finalHours).padStart(2, '0') + ':' + String(finalMins).padStart(2, '0');
-                }
-
-                // 🔍 調試：顯示發送的時間
-                const dateObj = new Date(date);
-                const timeObj = time ? new Date(`2000-01-01T${time}`) : null;
-                
-                console.log('📤 提交練琴記錄:', {
-                    日期輸入: date,
-                    時間輸入: time,
-                    系統時區偏移: new Date().getTimezoneOffset(),
-                    發送的日期: dateObj.toISOString().split('T')[0],
-                    發送的時間: time ? `2000-01-01T${time}:00` : null
-                });
+                btn.disabled = true;
+                btn.textContent = '提交中...';
 
                 const response = await fetch(`${API_BASE_URL}/practice/record`, {
                     method: 'POST',
@@ -2189,9 +2240,8 @@
                         'Authorization': `Bearer ${currentToken}`
                     },
                     body: JSON.stringify({
-                        // 發送本地日期和時間，不使用 ISO 格式轉換（避免時區問題）
                         date: `${date}T00:00:00`,
-                        time: time ? `2000-01-01T${time}:00` : null,
+                        time: null,
                         practice_minutes: minutes,
                         notes: notes
                     })
@@ -2203,32 +2253,21 @@
                 }
 
                 const data = await response.json();
-                showSuccess('練琴記錄已提交，等待家長批准！');
-                document.getElementById('practiceNotes').value = '';
-                document.getElementById('practiceMinutes').value = '15';
-                
-                // 重新設置預設時間
-                const now = new Date();
-                const nowMinutes = Math.round(now.getMinutes() / 5) * 5;
-                let nowHours = now.getHours();
-                let finalMinutes = nowMinutes;
-                
-                // 處理舍入導致的小時變化
-                if (finalMinutes >= 60) {
-                    nowHours = (nowHours + 1) % 24;
-                    finalMinutes = 0;
-                }
-                
-                const finalTime = String(nowHours).padStart(2, '0') + ':' + String(finalMinutes).padStart(2, '0');
-                document.getElementById('practiceTime').value = finalTime;
-                
-                console.log('⏰ 重置時間:', {
-                    新時間: finalTime,
-                    系統時間: now.toString()
-                });
-                
+                localStorage.setItem(`lastPracticeNotes_${currentUserId}`, notes);
+                document.getElementById('practiceMinutes').value = '30';
+
+                btn.classList.add('submit-btn--success');
+                btn.textContent = '✓ 已提交';
+                setTimeout(() => {
+                    btn.classList.remove('submit-btn--success');
+                    btn.disabled = false;
+                    btn.textContent = '提交練琴記錄';
+                }, 5000);
+
                 loadPracticeRecords(currentUserId);
             } catch (error) {
+                btn.disabled = false;
+                btn.textContent = '提交練琴記錄';
                 showError('提交練琴記錄失敗: ' + error.message);
             }
         }

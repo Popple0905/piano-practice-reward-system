@@ -30,8 +30,11 @@ def escape(val):
         return 'NULL'
     if isinstance(val, (int, float)):
         return str(val)
-    # Escape single quotes and backslashes
-    s = str(val).replace('\\', '\\\\').replace("'", "\\'")
+    s = str(val)
+    s = s.replace('\\', '\\\\')
+    s = s.replace("'", "\\'")
+    s = s.replace('\n', '\\n')
+    s = s.replace('\r', '\\r')
     return f"'{s}'"
 
 
