@@ -932,9 +932,15 @@
                     <h2 id="dashboardTitle">登入成功！</h2>
                     <p id="dashboardSubtitle"></p>
                     <div id="rewardPointsDisplay" style="display:none; margin-top: 14px;">
-                        <div class="reward-points-badge">
-                            <span class="reward-points-value" id="headerBalanceValue">0</span>
-                            <span class="reward-points-label">練琴獎勵點數</span>
+                        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                            <div class="reward-points-badge">
+                                <span class="reward-points-value" id="headerBalanceValue">0</span>
+                                <span class="reward-points-label">練琴獎勵點數</span>
+                            </div>
+                            <div class="reward-points-badge" style="background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);">
+                                <span class="reward-points-value" id="headerLotteryValue">0</span>
+                                <span class="reward-points-label">🎟️ 抽獎卷</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1467,6 +1473,8 @@
                         <div style="text-align: right;">
                             <div style="font-size: 18px; font-weight: 600; color: #667eea;">${child.game_balance} 點</div>
                             <div style="font-size: 12px; color: #999;">獎勵點數</div>
+                            <div style="font-size: 16px; font-weight: 600; color: #e67e22; margin-top: 6px;">🎟️ ${child.lottery_tickets || 0} 張</div>
+                            <div style="font-size: 12px; color: #999;">抽獎卷</div>
                         </div>
                     </div>
                     <div class="child-stats">
@@ -1483,12 +1491,15 @@
                             <div class="child-stat-label">總記錄</div>
                         </div>
                     </div>
-                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; display: flex; gap: 8px;">
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; display: flex; gap: 8px; flex-wrap: wrap;">
                         <button class="submit-btn" style="flex: 1;" onclick="event.stopPropagation(); selectChildForParent('${child.id}', '${child.name}')">
                             📋 練琴紀錄
                         </button>
                         <button class="submit-btn" style="flex: 1; background: #28a745;" onclick="event.stopPropagation(); showRewardDialog('${child.id}', '${child.name}')">
                             🎁 獎勵點數
+                        </button>
+                        <button class="submit-btn" style="flex: 1; background: #e67e22;" onclick="event.stopPropagation(); showLotteryDialog('${child.id}', '${child.name}')">
+                            🎟️ 抽獎卷
                         </button>
                     </div>
                 </div>
@@ -1773,7 +1784,7 @@
 
                 const data = await response.json();
                 console.log('✅ 記錄已批準:', data);
-                showSuccess(`✓ 記錄已批准！孩子獲得 ${data.game_minutes_earned} 點練琴獎勵點數`);
+                showSuccess(`✓ 記錄已批准！孩子獲得 ${data.game_minutes_earned} 點練琴獎勵點數 + ${data.lottery_tickets_earned} 張抽獎卷`);
 
                 // 重新加載待批準記錄
                 loadPendingRecords();
@@ -1928,6 +1939,40 @@
             rewardGameTime(childId, childName, numMinutes, reason || '家長獎勵');
         }
 
+        // 顯示給予抽獎卷對話框
+        function showLotteryDialog(childId, childName) {
+            const qty = prompt(`請輸入要給予 ${childName} 的抽獎卷數量：`, '1');
+            if (!qty || isNaN(qty)) return;
+            const numQty = parseInt(qty);
+            if (numQty <= 0) { showError('數量必須大於 0'); return; }
+            giveLotteryTickets(childId, childName, numQty);
+        }
+
+        // 給予抽獎卷
+        async function giveLotteryTickets(childId, childName, quantity) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/awards/give-lottery`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ child_id: childId, quantity })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '給予失敗');
+                }
+
+                const data = await response.json();
+                showSuccess(`✓ 已給予 ${childName} ${quantity} 張抽獎卷！目前共有 ${data.lottery_tickets} 張`);
+                loadParentDashboard(currentUserId);
+            } catch (error) {
+                showError('給予抽獎卷失敗: ' + error.message);
+            }
+        }
+
         // 獎勵遊戲時間
         async function rewardGameTime(childId, childName, minutes, reason) {
             try {
@@ -2023,7 +2068,7 @@
                             <div style="font-size: 13px; color: #999;">ID: ${child.id}</div>
                         </div>
                         <div class="manage-child-info">
-                            年齡：${child.age || '未設置'} ｜ 遊戲餘額：${child.game_balance} 分鐘
+                            年齡：${child.age || '未設置'} ｜ 獎勵點數：${child.game_balance} ｜ 🎟️ 抽獎卷：${child.lottery_tickets || 0} 張
                         </div>
                         <div class="manage-child-actions">
                             <button class="manage-btn rename" onclick="renameChild('${child.id}', '${child.name.replace(/'/g, "\\'")}')">✏️ 修改名稱</button>
@@ -2378,6 +2423,7 @@
                 if (!response.ok) throw new Error('加載失敗');
                 const data = await response.json();
                 document.getElementById('headerBalanceValue').textContent = data.game_balance;
+                document.getElementById('headerLotteryValue').textContent = data.lottery_tickets ?? 0;
             } catch (error) {
                 console.error('加載遊戲時間餘額失敗:', error);
             }

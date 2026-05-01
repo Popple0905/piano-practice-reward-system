@@ -30,6 +30,7 @@ class Child(db.Model):
 
     practice_records = db.relationship('PracticeRecord', backref='child', lazy=True, cascade='all, delete-orphan')
     game_balance = db.Column(db.Integer, default=0)  # Game reward points balance
+    lottery_tickets = db.Column(db.Integer, default=0)  # Lottery tickets count
 
 class PracticeRecord(db.Model):
     """Practice record"""

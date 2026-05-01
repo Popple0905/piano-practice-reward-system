@@ -114,6 +114,10 @@ def approve_practice_record(record_id):
     # Add reward points to child's balance
     record.child.game_balance += game_minutes
 
+    # Give one lottery ticket per 15 minutes of practice
+    lottery_tickets_earned = record.practice_minutes // 15
+    record.child.lottery_tickets += lottery_tickets_earned
+
     db.session.commit()
 
     return jsonify({
@@ -121,7 +125,9 @@ def approve_practice_record(record_id):
         'record_id': record_id,
         'practice_minutes': record.practice_minutes,
         'game_minutes_earned': game_minutes,
-        'child_new_balance': record.child.game_balance
+        'child_new_balance': record.child.game_balance,
+        'lottery_tickets_earned': lottery_tickets_earned,
+        'child_lottery_tickets': record.child.lottery_tickets
     }), 200
 
 @practice_bp.route('/record/<int:record_id>/reject', methods=['POST'])
@@ -298,6 +304,7 @@ def get_parent_children():
             'name': child.name,
             'age': child.age,
             'game_balance': child.game_balance,
+            'lottery_tickets': child.lottery_tickets or 0,
             'pending_records': pending_count,
             'total_practice_minutes_past_30_days': total_practice_minutes,
             'practice_records_count': len(child.practice_records),

@@ -130,6 +130,7 @@ def get_game_balance(child_id):
         'child_id': child.id,
         'child_name': child.name,
         'game_balance': child.game_balance,
+        'lottery_tickets': child.lottery_tickets or 0,
         'practice_to_game_ratio': parent.practice_to_game_ratio
     }), 200
 
@@ -225,6 +226,45 @@ def get_game_request_history(child_id):
             for r in requests
         ]
     }), 200
+
+@awards_bp.route('/give-lottery', methods=['POST'])
+@jwt_required()
+def give_lottery_tickets():
+    """Parent manually grants lottery tickets to a child"""
+    identity = get_jwt_identity()
+
+    if not identity.startswith('parent_'):
+        return jsonify({'error': 'Only parents can grant lottery tickets'}), 403
+
+    parent_id = int(identity.split('_')[1])
+
+    data = request.get_json()
+
+    if not data or not data.get('child_id') or not data.get('quantity'):
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    quantity = int(data['quantity'])
+    if quantity <= 0:
+        return jsonify({'error': 'Quantity must be greater than 0'}), 400
+
+    parent = Parent.query.get(parent_id)
+    if not parent:
+        return jsonify({'error': 'Parent not found'}), 404
+
+    child = Child.query.get(data['child_id'])
+    if not child or child.parent_id != parent_id:
+        return jsonify({'error': 'Child not found or permission denied'}), 404
+
+    child.lottery_tickets = (child.lottery_tickets or 0) + quantity
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Lottery tickets granted',
+        'child_id': child.id,
+        'quantity_given': quantity,
+        'lottery_tickets': child.lottery_tickets
+    }), 201
+
 
 @awards_bp.route('/ratio', methods=['GET'])
 @jwt_required()
