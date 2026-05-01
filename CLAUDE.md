@@ -48,6 +48,11 @@ All datetimes are stored as **naive UTC** in the DB. All API responses serialize
 
 **Adding a new route:** create a blueprint in `backend/routes/`, import and register it in `app.py` with `app.register_blueprint(bp, url_prefix='/api/...')`. Tables are auto-created via `db.create_all()` on startup, but SQLite won't add new columns to existing tables — use `ALTER TABLE` manually or delete the DB file during development.
 
+**Database migration rule:** Any change to `models.py` that adds or modifies a column on an existing table **must** also add a corresponding entry to the `MIGRATIONS` list in `backend/app.py`. This ensures the live DB (SQLite and MySQL) is automatically updated on next startup without manual intervention. Format:
+```python
+('table_name', 'column_name', 'ALTER TABLE table_name ADD COLUMN column_name TYPE DEFAULT value'),
+```
+
 **SQLite DB location:** `backend/instance/piano_app.db` (excluded from git).
 
 **Frontend API calls:** all calls go through `API_BASE_URL = window.location.origin + '/api'` (auto-detects host), using `currentToken` stored in the JS global scope.
