@@ -50,11 +50,37 @@ def create_app(config_name='development'):
         # All other routes return index.html (supports frontend routing)
         return send_from_directory(FRONTEND_DIR, 'index.html')
 
-    # Create database tables
+    # Create database tables and apply any missing column migrations
     with app.app_context():
         db.create_all()
+        _auto_migrate(app)
 
     return app
+
+
+def _auto_migrate(app):
+    """Add any columns that exist in models but are missing from the live DB.
+
+    Each entry: (table_name, column_name, ALTER TABLE SQL).
+    Safe to run repeatedly — skips columns that already exist.
+    """
+    MIGRATIONS = [
+        ('children', 'lottery_tickets',
+         'ALTER TABLE children ADD COLUMN lottery_tickets INTEGER DEFAULT 0'),
+    ]
+
+    from sqlalchemy import inspect, text
+    inspector = inspect(db.engine)
+    existing_tables = set(inspector.get_table_names())
+
+    for table, column, sql in MIGRATIONS:
+        if table not in existing_tables:
+            continue
+        existing_cols = {c['name'] for c in inspector.get_columns(table)}
+        if column not in existing_cols:
+            db.session.execute(text(sql))
+            db.session.commit()
+            app.logger.info(f'[migrate] Added column {table}.{column}')
 
 if __name__ == '__main__':
     env = 'production' if os.getenv('RAILWAY_ENVIRONMENT') else 'development'
