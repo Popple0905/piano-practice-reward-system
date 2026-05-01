@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>練琴獎勵系統 — 家長</title>
+    <link rel="icon" type="image/png" href="/icon.png">
+    <link rel="apple-touch-icon" href="/icon.png">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container container--stacked">
+        <!-- 上方歡迎區 -->
+        <div class="welcome-section">
+            <img src="/icon.png" class="app-icon" alt="練琴獎勵系統">
+            <h1>練琴<span>獎勵</span>系統</h1>
+            <p>記錄每日練琴時間<br>交換遊戲時間獎勵</p>
+        </div>
+
+        <!-- 右側登入/儀表板 -->
+        <div class="login-section">
+
+            <!-- 登入表單 -->
+            <div class="login-form" id="loginForm">
+                <a href="/" class="back-link">← 返回首頁</a>
+                <h2>👨‍👩‍👧 家長登入</h2>
+
+                <div class="error-message" id="errorMessage"></div>
+                <div class="success-message" id="successMessage"></div>
+
+                <div class="form-group">
+                    <label for="parentUsername">用戶名</label>
+                    <input type="text" id="parentUsername" placeholder="輸入用戶名" autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="parentPassword">密碼</label>
+                    <input type="password" id="parentPassword" placeholder="輸入密碼" autocomplete="current-password">
+                </div>
+                <div class="form-group remember-row">
+                    <label class="remember-label">
+                        <input type="checkbox" id="parentRemember"> 記住帳號
+                    </label>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>正在登入...</p>
+                </div>
+
+                <button class="login-btn" onclick="handleLogin()" id="loginBtn">登入</button>
+            </div>
+
+            <!-- 儀表板 -->
+            <div class="dashboard" id="dashboard">
+                <div class="dashboard-header">
+                    <h2 id="dashboardTitle">歡迎！</h2>
+                    <p id="dashboardSubtitle">👨‍👩‍👧 家長</p>
+                </div>
+
+                <div class="user-info">
+                    <div class="info-item">
+                        <span class="info-label">用戶名</span>
+                        <span class="info-value" id="userName"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">家長 ID</span>
+                        <span class="info-value" id="userId"></span>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="action-btn logout" onclick="handleLogout()">登出</button>
+                </div>
+
+                <!-- 家長導航 -->
+                <div id="parentNav">
+                    <div class="nav-tabs">
+                        <button class="nav-tab active" onclick="switchTab('children-list')">👧 我的孩子</button>
+                        <button class="nav-tab" onclick="switchTab('pending-records')">⏳ 待批準記錄</button>
+                        <button class="nav-tab" onclick="switchTab('approved-records')">✅ 已批准紀錄</button>
+                        <button class="nav-tab" onclick="switchTab('manage-children')">👤 管理兒童帳號</button>
+                        <button class="nav-tab" onclick="switchTab('special-redemptions-mgmt')">🎁 特殊兌換</button>
+                        <button class="nav-tab" onclick="switchTab('parent-settings')">⚙️ 帳號設定</button>
+                    </div>
+
+                    <!-- 孩子列表 -->
+                    <div id="children-list" class="tab-content active">
+                        <div class="form-section">
+                            <h3>👧 我的孩子</h3>
+                            <div id="childrenListContainer" style="margin-top: 20px;"></div>
+                        </div>
+                        <div id="childPracticeDetail" style="display: none; margin-top: 16px;"></div>
+                    </div>
+
+                    <!-- 待批準記錄 -->
+                    <div id="pending-records" class="tab-content">
+                        <div class="form-section">
+                            <h3>⏳ 待批準的練琴記錄</h3>
+                            <div id="pendingRecordsContainer" style="margin-top: 20px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 已批准紀錄 -->
+                    <div id="approved-records" class="tab-content">
+                        <div class="form-section">
+                            <h3>✅ 過去 30 天已批准紀錄</h3>
+                            <div id="approvedRecordsContainer" style="margin-top: 16px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 管理兒童帳號 -->
+                    <div id="manage-children" class="tab-content">
+                        <div class="form-section">
+                            <h3>➕ 新增兒童帳號</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="newChildId">帳號 ID（選填，留空自動分配）</label>
+                                    <input type="text" id="newChildId" placeholder="英文或數字，例如：kid01、101" autocapitalize="none" autocorrect="off" autocomplete="off">
+                                </div>
+                                <div class="form-group">
+                                    <label for="newChildAge">年齡（選填）</label>
+                                    <input type="number" id="newChildAge" placeholder="輸入年齡" min="1" max="18">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="newChildName">姓名</label>
+                                    <input type="text" id="newChildName" placeholder="輸入孩子姓名">
+                                </div>
+                                <div class="form-group">
+                                    <label for="newChildPassword">密碼</label>
+                                    <input type="password" id="newChildPassword" placeholder="設定登入密碼">
+                                </div>
+                            </div>
+                            <button class="submit-btn" onclick="addChildAccount()">新增帳號</button>
+                            <div id="addChildResult" style="margin-top: 15px;"></div>
+                        </div>
+                        <div class="form-section">
+                            <h3>👧 現有兒童帳號</h3>
+                            <div id="manageChildrenList" style="margin-top: 15px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 特殊兌換管理 -->
+                    <div id="special-redemptions-mgmt" class="tab-content">
+                        <div class="form-section">
+                            <h3>➕ 新增特殊兌換項目</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="srChildSelect">選擇孩子</label>
+                                    <select id="srChildSelect"></select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="srPointsCost">兌換點數</label>
+                                    <input type="number" id="srPointsCost" placeholder="例: 100" min="1">
+                                </div>
+                            </div>
+                            <div class="form-row full">
+                                <div class="form-group">
+                                    <label for="srContent">兌換內容</label>
+                                    <input type="text" id="srContent" placeholder="例: 一次冰淇淋、看一部電影">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="srQuantity">數量（選填，留空表示無限）</label>
+                                    <input type="number" id="srQuantity" placeholder="例: 3" min="1">
+                                </div>
+                                <div class="form-group">
+                                    <label for="srExpiresAt">兌換期限（選填，留空表示不過期）</label>
+                                    <input type="datetime-local" id="srExpiresAt">
+                                </div>
+                            </div>
+                            <button class="submit-btn" onclick="addSpecialRedemption()">新增項目</button>
+                            <div id="srAddResult" style="margin-top: 15px;"></div>
+                        </div>
+                        <div class="form-section">
+                            <h3>📋 目前特殊兌換項目</h3>
+                            <div id="srManageList" style="margin-top: 15px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 帳號設定 -->
+                    <div id="parent-settings" class="tab-content">
+                        <div class="form-section">
+                            <h3>🔑 修改登入密碼</h3>
+                            <div class="form-row full">
+                                <div class="form-group">
+                                    <label for="currentPassword">目前密碼</label>
+                                    <input type="password" id="currentPassword" placeholder="輸入目前密碼">
+                                </div>
+                            </div>
+                            <div class="form-row full">
+                                <div class="form-group">
+                                    <label for="newPassword">新密碼</label>
+                                    <input type="password" id="newPassword" placeholder="輸入新密碼（至少4個字元）">
+                                </div>
+                            </div>
+                            <div class="form-row full">
+                                <div class="form-group">
+                                    <label for="confirmPassword">確認新密碼</label>
+                                    <input type="password" id="confirmPassword" placeholder="再次輸入新密碼">
+                                </div>
+                            </div>
+                            <button class="submit-btn" onclick="changeParentPassword()">更新密碼</button>
+                            <div id="changePasswordResult" style="margin-top: 15px;"></div>
+                        </div>
+                    </div>
+
+                </div><!-- /parentNav -->
+            </div><!-- /dashboard -->
+
+        </div><!-- /login-section -->
+    </div><!-- /container -->
+
+    <script>
+        const API_BASE_URL = `${window.location.origin}/api`;
+        let currentToken = null;
+        let currentUserId = null;
+
+        // ── 通用工具 ──────────────────────────────────────────────
+
+        function showError(message) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 5000);
+        }
+
+        function showSuccess(message) {
+            const el = document.getElementById('successMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 3000);
+        }
+
+        function clearMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function formatDatetime(isoStr) {
+            if (!isoStr) return '';
+            const d = new Date(isoStr);
+            const y = d.getFullYear();
+            const mo = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const h = String(d.getHours()).padStart(2, '0');
+            const mi = String(d.getMinutes()).padStart(2, '0');
+            return `${y}/${mo}/${day} ${h}:${mi}`;
+        }
+
+        // ── 記住帳號 ──────────────────────────────────────────────
+
+        function loadRememberedCredentials() {
+            const saved = JSON.parse(localStorage.getItem('parent_remember') || 'null');
+            if (saved) {
+                document.getElementById('parentUsername').value = saved.username || '';
+                document.getElementById('parentRemember').checked = true;
+            }
+        }
+        loadRememberedCredentials();
+
+        // ── 保留登入狀態 (60 分鐘) ────────────────────────────────
+
+        const SESSION_KEY = 'parent_session';
+        const SESSION_TTL = 60 * 60 * 1000; // 60 minutes in ms
+
+        function saveSession(token, parentId, username) {
+            localStorage.setItem(SESSION_KEY, JSON.stringify({
+                token, parentId, username, savedAt: Date.now()
+            }));
+        }
+
+        function clearSession() {
+            localStorage.removeItem(SESSION_KEY);
+        }
+
+        function tryRestoreSession() {
+            const raw = localStorage.getItem(SESSION_KEY);
+            if (!raw) return;
+            const s = JSON.parse(raw);
+            if (!s.token || Date.now() - s.savedAt > SESSION_TTL) {
+                clearSession();
+                return;
+            }
+            currentToken = s.token;
+            currentUserId = s.parentId;
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('dashboard').classList.add('active');
+            document.getElementById('dashboardTitle').textContent = `歡迎，${s.username}！`;
+            document.getElementById('userName').textContent = s.username;
+            document.getElementById('userId').textContent = s.parentId;
+            loadParentDashboard(currentUserId);
+        }
+        tryRestoreSession();
+
+        // ── 登入 ──────────────────────────────────────────────────
+
+        async function handleLogin() {
+            const loginBtn = document.getElementById('loginBtn');
+            const loading = document.getElementById('loading');
+            loginBtn.disabled = true;
+            loading.style.display = 'block';
+            clearMessages();
+
+            try {
+                const username = document.getElementById('parentUsername').value;
+                const password = document.getElementById('parentPassword').value;
+                if (!username || !password) throw new Error('請輸入用戶名和密碼');
+
+                if (document.getElementById('parentRemember').checked) {
+                    localStorage.setItem('parent_remember', JSON.stringify({ username }));
+                } else {
+                    localStorage.removeItem('parent_remember');
+                }
+
+                const response = await fetch(`${API_BASE_URL}/auth/parent/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '登入失敗');
+                }
+
+                const data = await response.json();
+                currentToken = data.access_token;
+                currentUserId = data.parent_id;
+                saveSession(data.access_token, data.parent_id, data.username);
+
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('dashboard').classList.add('active');
+                document.getElementById('dashboardTitle').textContent = `歡迎，${data.username}！`;
+                document.getElementById('userName').textContent = data.username;
+                document.getElementById('userId').textContent = data.parent_id;
+
+                loadParentDashboard(currentUserId);
+                showSuccess('登入成功！');
+
+            } catch (error) {
+                showError('登入失敗: ' + error.message);
+            } finally {
+                loginBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+
+        // Enter 鍵觸發登入
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && document.getElementById('loginForm').offsetParent !== null) handleLogin();
+        });
+
+        // ── 登出 ──────────────────────────────────────────────────
+
+        function handleLogout() {
+            currentToken = null;
+            currentUserId = null;
+            clearSession();
+            window.location.href = '/';
+        }
+
+        // ── Tab 切換 ──────────────────────────────────────────────
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'approved-records') loadApprovedRecords();
+            else if (tabName === 'manage-children') loadManageChildren();
+            else if (tabName === 'special-redemptions-mgmt') loadSpecialRedemptionsMgmt();
+        }
+
+        // ── 家長儀表板 ────────────────────────────────────────────
+
+        async function loadParentDashboard(parentId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/practice/parent/children`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' }
+                });
+                if (!response.ok) throw new Error('無法獲取孩子列表');
+                const data = await response.json();
+                displayChildrenList(data.children);
+                loadPendingRecords();
+            } catch (error) {
+                showError('加載家長儀表板失敗: ' + error.message);
+            }
+        }
+
+        function displayChildrenList(children) {
+            const container = document.getElementById('childrenListContainer');
+            if (children.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999;">暫無孩子信息</p>';
+                return;
+            }
+            container.innerHTML = children.map(child => `
+                <div class="child-card" onclick="selectChildForParent('${child.id}', '${child.name}')">
+                    <div class="child-card-header">
+                        <div>
+                            <div class="child-name">👧 ${child.name}</div>
+                            <div class="child-age">年齡: ${child.age || '未設置'}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 18px; font-weight: 600; color: #667eea;">${child.game_balance} 點</div>
+                            <div style="font-size: 12px; color: #999;">獎勵點數</div>
+                            <div style="font-size: 16px; font-weight: 600; color: #e67e22; margin-top: 6px;">🎟️ ${child.lottery_tickets || 0} 張</div>
+                            <div style="font-size: 12px; color: #999;">抽獎卷</div>
+                        </div>
+                    </div>
+                    <div class="child-stats">
+                        <div class="child-stat-item">
+                            <div class="child-stat-value">${child.pending_records}</div>
+                            <div class="child-stat-label">待批準</div>
+                        </div>
+                        <div class="child-stat-item">
+                            <div class="child-stat-value">${child.total_practice_minutes_past_30_days}</div>
+                            <div class="child-stat-label">30天練琴(分)</div>
+                        </div>
+                        <div class="child-stat-item">
+                            <div class="child-stat-value">${child.practice_records_count}</div>
+                            <div class="child-stat-label">總記錄</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="submit-btn" style="flex: 1;" onclick="event.stopPropagation(); selectChildForParent('${child.id}', '${child.name}')">
+                            📋 練琴紀錄
+                        </button>
+                        <button class="submit-btn" style="flex: 1; background: #28a745;" onclick="event.stopPropagation(); showRewardDialog('${child.id}', '${child.name}')">
+                            🎁 獎勵點數
+                        </button>
+                        <button class="submit-btn" style="flex: 1; background: #e67e22;" onclick="event.stopPropagation(); showLotteryDialog('${child.id}', '${child.name}')">
+                            🎟️ 抽獎卷
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ── 孩子練琴紀錄面板 ──────────────────────────────────────
+
+        let currentChildPracticeId = null;
+        let currentChildPracticeName = null;
+
+        function selectChildForParent(childId, childName) {
+            currentChildPracticeId = childId;
+            currentChildPracticeName = childName;
+            loadChildPracticeRecords(childId, childName, '');
+            setTimeout(() => {
+                const detail = document.getElementById('childPracticeDetail');
+                if (detail) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+
+        async function loadChildPracticeRecords(childId, childName, statusFilter) {
+            const detail = document.getElementById('childPracticeDetail');
+            detail.style.display = 'block';
+            detail.innerHTML = `<div class="form-section"><p style="text-align:center;color:#999;">載入中...</p></div>`;
+
+            try {
+                let url = `${API_BASE_URL}/practice/records/${childId}`;
+                if (statusFilter) url += `?status=${statusFilter}`;
+                const response = await fetch(url, { headers: { 'Authorization': `Bearer ${currentToken}` } });
+                if (!response.ok) throw new Error('無法獲取練琴記錄');
+                const data = await response.json();
+
+                const filters = [
+                    { value: '', label: '全部' },
+                    { value: 'pending', label: '待批準' },
+                    { value: 'approved', label: '已批准' },
+                    { value: 'rejected', label: '已拒絕' },
+                ];
+                const filterHtml = filters.map(f => `
+                    <button onclick="loadChildPracticeRecords('${childId}', '${childName}', '${f.value}')"
+                        style="padding:5px 14px;border-radius:20px;border:1px solid #667eea;cursor:pointer;font-size:13px;
+                               background:${f.value === statusFilter ? '#667eea' : 'white'};
+                               color:${f.value === statusFilter ? 'white' : '#667eea'};">
+                        ${f.label}
+                    </button>`).join('');
+
+                const statusLabel = { pending: '待批準', approved: '已批准', rejected: '已拒絕' };
+                const statusClass = { pending: 'pending', approved: 'approved', rejected: 'rejected' };
+
+                const recordsHtml = data.records.length === 0
+                    ? '<p style="text-align:center;color:#999;padding:20px;">暫無符合的記錄</p>'
+                    : data.records.map(r => `
+                        <div class="record-item">
+                            <div class="record-header">
+                                <div>
+                                    <div class="record-date">${r.date}</div>
+                                    <div style="font-size:13px;color:#999;margin-top:3px;">
+                                        時間: ${r.time ? r.time.substring(0, 5) : '未設置'} | 練琴: ${r.practice_minutes} 分鐘
+                                    </div>
+                                </div>
+                                <div class="record-status ${statusClass[r.status] || r.status}">
+                                    ${statusLabel[r.status] || r.status}
+                                </div>
+                            </div>
+                            ${r.notes ? `<div class="record-details">備註: ${r.notes}</div>` : ''}
+                            ${r.status === 'pending' ? `
+                            <div class="record-action-buttons">
+                                <button class="record-action-btn approve" onclick="approveRecord(${r.id})">✓ 批準</button>
+                                <button class="record-action-btn reject" onclick="rejectRecord(${r.id})">✗ 拒絕</button>
+                            </div>` : ''}
+                        </div>`).join('');
+
+                detail.innerHTML = `
+                    <div class="form-section">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                            <h3 style="margin:0;">📋 ${childName} 的練琴紀錄</h3>
+                            <button onclick="closeChildPracticeDetail()"
+                                style="background:none;border:none;font-size:22px;cursor:pointer;color:#999;line-height:1;">✕</button>
+                        </div>
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+                            <div style="background:#f0f4ff;border-radius:8px;padding:10px 18px;text-align:center;">
+                                <div style="font-size:20px;font-weight:600;color:#667eea;">${data.total_records}</div>
+                                <div style="font-size:12px;color:#999;">總記錄</div>
+                            </div>
+                            <div style="background:#fff3cd;border-radius:8px;padding:10px 18px;text-align:center;">
+                                <div style="font-size:20px;font-weight:600;color:#e0a800;">${data.pending_records}</div>
+                                <div style="font-size:12px;color:#999;">待批準</div>
+                            </div>
+                            <div style="background:#d4edda;border-radius:8px;padding:10px 18px;text-align:center;">
+                                <div style="font-size:20px;font-weight:600;color:#28a745;">${data.approved_records}</div>
+                                <div style="font-size:12px;color:#999;">已批准</div>
+                            </div>
+                            <div style="background:#e8f4f8;border-radius:8px;padding:10px 18px;text-align:center;">
+                                <div style="font-size:20px;font-weight:600;color:#17a2b8;">${data.total_approved_minutes}</div>
+                                <div style="font-size:12px;color:#999;">總練琴(分)</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">${filterHtml}</div>
+                        <div>${recordsHtml}</div>
+                    </div>`;
+
+            } catch (error) {
+                detail.innerHTML = `<div class="form-section"><p style="color:red;">載入失敗：${error.message}</p></div>`;
+            }
+        }
+
+        function closeChildPracticeDetail() {
+            const detail = document.getElementById('childPracticeDetail');
+            detail.style.display = 'none';
+            detail.innerHTML = '';
+            currentChildPracticeId = null;
+            currentChildPracticeName = null;
+        }
+
+        // ── 待批準記錄 ────────────────────────────────────────────
+
+        async function loadPendingRecords() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/practice/parent/children`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' }
+                });
+                if (!response.ok) throw new Error('無法獲取待批準的記錄');
+                const parentData = await response.json();
+                let allPendingRecords = [];
+                for (const child of parentData.children) {
+                    const recordResponse = await fetch(`${API_BASE_URL}/practice/records/${child.id}?status=pending`, {
+                        headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' }
+                    });
+                    if (recordResponse.ok) {
+                        const recordData = await recordResponse.json();
+                        recordData.records.forEach(record => { record.child_name = child.name; });
+                        allPendingRecords = allPendingRecords.concat(recordData.records);
+                    }
+                }
+                displayPendingRecords(allPendingRecords);
+            } catch (error) {
+                showError('加載待批準記錄失敗: ' + error.message);
+            }
+        }
+
+        function displayPendingRecords(records) {
+            const container = document.getElementById('pendingRecordsContainer');
+            if (records.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999;">暫無待批準的記錄</p>';
+                return;
+            }
+            container.innerHTML = records.map(record => `
+                <div class="record-item">
+                    <div class="record-header">
+                        <div>
+                            <div class="record-date">👧 ${record.child_name} - ${record.date}</div>
+                            <div style="font-size: 13px; color: #999; margin-top: 3px;">
+                                時間: ${record.time ? record.time.substring(0, 5) : '未設置'} | 練琴: ${record.practice_minutes} 分鐘
+                            </div>
+                        </div>
+                        <div class="record-status pending">待批準</div>
+                    </div>
+                    <div class="record-details">
+                        <div>備註: ${record.notes || '無'}</div>
+                        <div>提交時間: ${record.created_at ? formatDatetime(record.created_at) : '未知'}</div>
+                    </div>
+                    <div class="record-action-buttons">
+                        <button class="record-action-btn approve" onclick="approveRecord(${record.id})">✓ 批準</button>
+                        <button class="record-action-btn reject" onclick="rejectRecord(${record.id})">✗ 拒絕</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ── 已批准紀錄 ────────────────────────────────────────────
+
+        async function loadApprovedRecords() {
+            const container = document.getElementById('approvedRecordsContainer');
+            container.innerHTML = '<p style="text-align:center;color:var(--text-subdued);">載入中...</p>';
+            try {
+                const parentResp = await fetch(`${API_BASE_URL}/practice/parent/children`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                if (!parentResp.ok) throw new Error('無法取得兒童列表');
+                const parentData = await parentResp.json();
+
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                const startDate = thirtyDaysAgo.toISOString().split('T')[0];
+
+                const childGroups = [];
+                for (const child of parentData.children) {
+                    const resp = await fetch(
+                        `${API_BASE_URL}/practice/records/${child.id}?status=approved&start_date=${startDate}`,
+                        { headers: { 'Authorization': `Bearer ${currentToken}` } }
+                    );
+                    if (!resp.ok) continue;
+                    const data = await resp.json();
+                    if (data.records.length > 0) childGroups.push({ child, records: data.records });
+                }
+
+                if (childGroups.length === 0) {
+                    container.innerHTML = '<p style="text-align:center;color:var(--text-subdued);padding:20px;">過去 30 天內沒有已批准的練琴紀錄</p>';
+                    return;
+                }
+
+                container.innerHTML = childGroups.map(({ child, records }) => {
+                    const totalMinutes = records.reduce((sum, r) => sum + r.practice_minutes, 0);
+                    const recordRows = records.map(r => `
+                        <div class="approved-record-row">
+                            <span class="ar-date">${r.date}</span>
+                            <span class="ar-minutes">${r.practice_minutes} 分鐘</span>
+                            <span class="ar-note">${r.notes || ''}</span>
+                            <span class="ar-time">${r.approved_at ? formatDatetime(r.approved_at) : ''}</span>
+                        </div>
+                    `).join('');
+                    return `
+                        <div class="approved-child-group">
+                            <div class="approved-child-header">
+                                <span class="approved-child-name">👧 ${child.name}</span>
+                                <span class="approved-child-total">共 ${totalMinutes} 分鐘 · ${records.length} 筆</span>
+                            </div>
+                            <div class="approved-record-table">
+                                <div class="approved-record-row header">
+                                    <span class="ar-date">日期</span>
+                                    <span class="ar-minutes">練琴時間</span>
+                                    <span class="ar-note">備註</span>
+                                    <span class="ar-time">批准日期</span>
+                                </div>
+                                ${recordRows}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                container.innerHTML = `<p style="color:var(--danger)">載入失敗：${error.message}</p>`;
+            }
+        }
+
+        // ── 批準 / 拒絕記錄 ──────────────────────────────────────
+
+        async function approveRecord(recordId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/practice/record/${recordId}/approve`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' }
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '批準失敗');
+                }
+                const data = await response.json();
+                showSuccess(`✓ 記錄已批准！孩子獲得 ${data.game_minutes_earned} 點練琴獎勵點數 + ${data.lottery_tickets_earned} 張抽獎卷`);
+                loadPendingRecords();
+                loadParentDashboard(currentUserId);
+                if (currentChildPracticeId) loadChildPracticeRecords(currentChildPracticeId, currentChildPracticeName, '');
+            } catch (error) {
+                showError('批準失敗: ' + error.message);
+            }
+        }
+
+        async function rejectRecord(recordId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/practice/record/${recordId}/reject`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' }
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '拒絕失敗');
+                }
+                showSuccess('✗ 記錄已拒絕');
+                loadPendingRecords();
+                loadParentDashboard(currentUserId);
+                if (currentChildPracticeId) loadChildPracticeRecords(currentChildPracticeId, currentChildPracticeName, '');
+            } catch (error) {
+                showError('拒絕失敗: ' + error.message);
+            }
+        }
+
+        // ── 獎勵點數 / 抽獎卷 ─────────────────────────────────────
+
+        function showRewardDialog(childId, childName) {
+            const minutes = prompt(`請輸入要獎勵給 ${childName} 的練琴獎勵點數:\n(必須是15的倍數)\n\n例如: 15, 30, 45, 60`);
+            if (!minutes || isNaN(minutes)) return;
+            const numMinutes = parseInt(minutes);
+            if (numMinutes <= 0) { showError('獎勵點數必須大於0'); return; }
+            if (numMinutes % 15 !== 0) { showError('獎勵點數必須是15的倍數'); return; }
+            const reason = prompt(`請輸入獎勵原因(可選):\n例如: 表現良好、完成額外任務等`);
+            rewardGameTime(childId, childName, numMinutes, reason || '家長獎勵');
+        }
+
+        async function rewardGameTime(childId, childName, minutes, reason) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/awards/give`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ child_id: childId, game_minutes: minutes, reason })
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '獎勵失敗');
+                }
+                const data = await response.json();
+                showSuccess(`✓ 已獎勵 ${childName} ${minutes} 點練琴獎勵點數！\n原因: ${reason}\n新餘額: ${data.new_balance} 點`);
+                loadParentDashboard(currentUserId);
+            } catch (error) {
+                showError('獎勵失敗: ' + error.message);
+            }
+        }
+
+        function showLotteryDialog(childId, childName) {
+            const qty = prompt(`請輸入要給予 ${childName} 的抽獎卷數量：`, '1');
+            if (!qty || isNaN(qty)) return;
+            const numQty = parseInt(qty);
+            if (numQty <= 0) { showError('數量必須大於 0'); return; }
+            giveLotteryTickets(childId, childName, numQty);
+        }
+
+        async function giveLotteryTickets(childId, childName, quantity) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/awards/give-lottery`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ child_id: childId, quantity })
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '給予失敗');
+                }
+                const data = await response.json();
+                showSuccess(`✓ 已給予 ${childName} ${quantity} 張抽獎卷！目前共有 ${data.lottery_tickets} 張`);
+                loadParentDashboard(currentUserId);
+            } catch (error) {
+                showError('給予抽獎卷失敗: ' + error.message);
+            }
+        }
+
+        // ── 帳號設定 ──────────────────────────────────────────────
+
+        async function changeParentPassword() {
+            const current = document.getElementById('currentPassword').value;
+            const newPwd = document.getElementById('newPassword').value;
+            const confirm = document.getElementById('confirmPassword').value;
+            const resultDiv = document.getElementById('changePasswordResult');
+
+            if (!current) { showError('請輸入目前密碼'); return; }
+            if (!newPwd || newPwd.length < 4) { showError('新密碼至少需要 4 個字元'); return; }
+            if (newPwd !== confirm) { showError('兩次輸入的新密碼不一致'); return; }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/parent/change-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+                    body: JSON.stringify({ current_password: current, new_password: newPwd })
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '更新失敗');
+                }
+                resultDiv.innerHTML = '<div style="background:#efe;color:#3a3;padding:10px;border-radius:6px;">✅ 密碼已成功更新</div>';
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+            } catch (error) {
+                resultDiv.innerHTML = `<div style="background:#fee;color:#c33;padding:10px;border-radius:6px;">❌ ${error.message}</div>`;
+            }
+        }
+
+        // ── 管理兒童帳號 ──────────────────────────────────────────
+
+        async function loadManageChildren() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/practice/parent/children`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                if (!response.ok) throw new Error('無法取得兒童列表');
+                const data = await response.json();
+                const container = document.getElementById('manageChildrenList');
+                if (data.children.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #999;">尚未建立任何兒童帳號</p>';
+                    return;
+                }
+                container.innerHTML = data.children.map(child => `
+                    <div class="manage-child-card">
+                        <div class="manage-child-header">
+                            <div class="child-name">👧 ${child.name}</div>
+                            <div style="font-size: 13px; color: #999;">ID: ${child.id}</div>
+                        </div>
+                        <div class="manage-child-info">
+                            年齡：${child.age || '未設置'} ｜ 獎勵點數：${child.game_balance} ｜ 🎟️ 抽獎卷：${child.lottery_tickets || 0} 張
+                        </div>
+                        <div class="manage-child-actions">
+                            <button class="manage-btn rename" onclick="renameChild('${child.id}', '${child.name.replace(/'/g, "\\'")}')">✏️ 修改名稱</button>
+                            <button class="manage-btn password" onclick="changeChildPassword('${child.id}', '${child.name.replace(/'/g, "\\'")}')">🔑 修改密碼</button>
+                            <button class="manage-btn delete" onclick="deleteChildAccount('${child.id}', '${child.name.replace(/'/g, "\\'")}')">🗑️ 刪除帳號</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                showError('載入兒童帳號失敗: ' + error.message);
+            }
+        }
+
+        async function addChildAccount() {
+            const name = document.getElementById('newChildName').value.trim();
+            const password = document.getElementById('newChildPassword').value;
+            const age = document.getElementById('newChildAge').value;
+            const customId = document.getElementById('newChildId').value;
+            const resultDiv = document.getElementById('addChildResult');
+
+            if (!name) { showError('請輸入孩子姓名'); return; }
+            if (!password || password.length < 4) { showError('密碼至少需要 4 個字元'); return; }
+            if (customId && !/^[A-Za-z0-9]{1,20}$/.test(customId)) {
+                showError('ID 只能包含英文字母與數字，長度 1~20'); return;
+            }
+
+            try {
+                const body = { name, password };
+                if (age) body.age = parseInt(age);
+                if (customId) body.id = customId;
+
+                const response = await fetch(`${API_BASE_URL}/management/create-child`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+                    body: JSON.stringify(body)
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '新增失敗');
+                }
+                const data = await response.json();
+                resultDiv.innerHTML = `<div style="background:#efe;color:#3a3;padding:10px;border-radius:6px;">
+                    ✅ 帳號已建立！孩子 ID：<strong>${data.child_id}</strong>，名稱：<strong>${data.name}</strong><br>
+                    <small>請記錄此 ID，孩子登入時需要使用</small>
+                </div>`;
+                document.getElementById('newChildId').value = '';
+                document.getElementById('newChildName').value = '';
+                document.getElementById('newChildPassword').value = '';
+                document.getElementById('newChildAge').value = '';
+                loadManageChildren();
+                loadParentDashboard(currentUserId);
+            } catch (error) {
+                resultDiv.innerHTML = `<div style="background:#fee;color:#c33;padding:10px;border-radius:6px;">❌ ${error.message}</div>`;
+            }
+        }
+
+        async function renameChild(childId, currentName) {
+            const newName = prompt(`修改「${currentName}」的名稱：`, currentName);
+            if (!newName || newName.trim() === currentName) return;
+            try {
+                const response = await fetch(`${API_BASE_URL}/management/update-child-name/${childId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+                    body: JSON.stringify({ new_name: newName.trim() })
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '修改失敗');
+                }
+                const data = await response.json();
+                showSuccess(`✅ 名稱已更新為「${data.child_name}」`);
+                loadManageChildren();
+                loadParentDashboard(currentUserId);
+            } catch (error) {
+                showError('修改名稱失敗: ' + error.message);
+            }
+        }
+
+        async function changeChildPassword(childId, childName) {
+            const newPassword = prompt(`設定「${childName}」的新密碼：`);
+            if (!newPassword) return;
+            if (newPassword.length < 4) { showError('密碼至少需要 4 個字元'); return; }
+            try {
+                const response = await fetch(`${API_BASE_URL}/management/update-child-password/${childId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+                    body: JSON.stringify({ new_password: newPassword })
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '修改失敗');
+                }
+                showSuccess(`✅「${childName}」的密碼已更新`);
+            } catch (error) {
+                showError('修改密碼失敗: ' + error.message);
+            }
+        }
+
+        async function deleteChildAccount(childId, childName) {
+            if (!confirm(`確定要刪除「${childName}」的帳號嗎？\n\n此操作將刪除該孩子所有的練琴記錄，且無法復原！`)) return;
+            try {
+                const response = await fetch(`${API_BASE_URL}/management/delete-child/${childId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '刪除失敗');
+                }
+                showSuccess(`✅「${childName}」的帳號已刪除`);
+                loadManageChildren();
+                loadParentDashboard(currentUserId);
+            } catch (error) {
+                showError('刪除帳號失敗: ' + error.message);
+            }
+        }
+
+        // ── 特殊兌換（家長管理） ──────────────────────────────────
+
+        async function loadSpecialRedemptionsMgmt() {
+            const select = document.getElementById('srChildSelect');
+            try {
+                const res = await fetch(`${API_BASE_URL}/practice/parent/children`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                const data = await res.json();
+                const children = data.children || [];
+                select.innerHTML = children.length === 0
+                    ? '<option value="">尚無孩子帳號</option>'
+                    : children.map(c => `<option value="${c.id}">${c.name}（${c.id}）</option>`).join('');
+            } catch (e) {
+                select.innerHTML = '<option value="">載入失敗</option>';
+            }
+
+            const listEl = document.getElementById('srManageList');
+            listEl.innerHTML = '<p style="text-align:center;color:var(--text-subdued);">載入中...</p>';
+            try {
+                const res = await fetch(`${API_BASE_URL}/special-redemptions/parent`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                const data = await res.json();
+                const items = data.items || [];
+                if (items.length === 0) {
+                    listEl.innerHTML = '<p style="color:var(--text-subdued);text-align:center;padding:20px;">尚無特殊兌換項目</p>';
+                    return;
+                }
+                listEl.innerHTML = items.map(item => {
+                    const expired = item.is_expired;
+                    const expiryText = item.expires_at ? `期限：${formatDatetime(item.expires_at)}` : '無期限';
+                    const quantityText = item.quantity !== null ? `數量：${item.quantity}` : '數量：無限';
+                    return `
+                    <div class="record-item" style="${expired ? 'opacity:0.5;' : ''}">
+                        <div class="record-header">
+                            <div>
+                                <div class="record-date">${item.content} ${expired ? '（已過期）' : ''}</div>
+                                <div style="font-size:12px;color:var(--text-subdued);margin-top:3px;">
+                                    孩子：${item.child_name}（${item.child_id}）　${quantityText}　${expiryText}
+                                </div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div class="reward-cost-badge">${item.points_cost} 點</div>
+                                <button class="action-btn" style="padding:4px 10px;font-size:12px;" onclick="deleteSpecialRedemption(${item.id})">刪除</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                listEl.innerHTML = `<p style="color:var(--danger)">載入失敗：${e.message}</p>`;
+            }
+        }
+
+        async function addSpecialRedemption() {
+            const childId = document.getElementById('srChildSelect').value;
+            const content = document.getElementById('srContent').value.trim();
+            const pointsCost = parseInt(document.getElementById('srPointsCost').value);
+            const expiresAt = document.getElementById('srExpiresAt').value;
+            const resultEl = document.getElementById('srAddResult');
+            const quantityRaw = document.getElementById('srQuantity').value;
+            const quantity = quantityRaw ? parseInt(quantityRaw) : null;
+
+            if (!childId || !content || !pointsCost) {
+                resultEl.innerHTML = '<p style="color:var(--danger)">請填寫孩子、內容與點數</p>';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/special-redemptions/`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ child_id: childId, content, points_cost: pointsCost, quantity, expires_at: expiresAt ? new Date(expiresAt).toISOString() : null })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || '新增失敗');
+                resultEl.innerHTML = '<p style="color:var(--success)">✅ 新增成功</p>';
+                document.getElementById('srContent').value = '';
+                document.getElementById('srPointsCost').value = '';
+                document.getElementById('srQuantity').value = '';
+                document.getElementById('srExpiresAt').value = '';
+                loadSpecialRedemptionsMgmt();
+            } catch (e) {
+                resultEl.innerHTML = `<p style="color:var(--danger)">新增失敗：${e.message}</p>`;
+            }
+        }
+
+        async function deleteSpecialRedemption(itemId) {
+            if (!confirm('確定要刪除此兌換項目？')) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/special-redemptions/${itemId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                if (!res.ok) throw new Error('刪除失敗');
+                loadSpecialRedemptionsMgmt();
+            } catch (e) {
+                alert('刪除失敗：' + e.message);
+            }
+        }
+    </script>
+</body>
+</html>

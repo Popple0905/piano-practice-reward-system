@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>練琴獎勵系統 — 孩子</title>
+    <link rel="icon" type="image/png" href="/icon.png">
+    <link rel="apple-touch-icon" href="/icon.png">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container container--stacked">
+        <!-- 上方歡迎區 -->
+        <div class="welcome-section">
+            <img src="/icon.png" class="app-icon" alt="練琴獎勵系統">
+            <h1>練琴<span>獎勵</span>系統</h1>
+            <p>記錄每日練琴時間<br>交換遊戲時間獎勵</p>
+        </div>
+
+        <!-- 右側登入/儀表板 -->
+        <div class="login-section">
+
+            <!-- 登入表單 -->
+            <div class="login-form" id="loginForm">
+                <a href="/" class="back-link">← 返回首頁</a>
+                <h2>👧 孩子登入</h2>
+
+                <div class="error-message" id="errorMessage"></div>
+                <div class="success-message" id="successMessage"></div>
+
+                <div class="form-group">
+                    <label for="childId">孩子 ID</label>
+                    <input type="text" id="childId" placeholder="輸入孩子ID（英文或數字）" autocapitalize="none" autocorrect="off" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="childPassword">密碼</label>
+                    <input type="password" id="childPassword" placeholder="輸入密碼" autocomplete="current-password">
+                </div>
+                <div class="form-group remember-row">
+                    <label class="remember-label">
+                        <input type="checkbox" id="childRemember"> 記住帳號
+                    </label>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>正在登入...</p>
+                </div>
+
+                <button class="login-btn" onclick="handleLogin()" id="loginBtn">登入</button>
+            </div>
+
+            <!-- 儀表板 -->
+            <div class="dashboard" id="dashboard">
+                <div class="dashboard-header">
+                    <h2 id="dashboardTitle">歡迎！</h2>
+                    <p id="dashboardSubtitle">👧 孩子</p>
+                    <div id="rewardPointsDisplay" style="margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                        <div class="reward-points-badge">
+                            <span class="reward-points-value" id="headerBalanceValue">0</span>
+                            <span class="reward-points-label">練琴獎勵點數</span>
+                        </div>
+                        <div class="reward-points-badge" style="background: linear-gradient(135deg, #e67e22, #f39c12);">
+                            <span class="reward-points-value" id="headerLotteryValue">0</span>
+                            <span class="reward-points-label">🎟️ 抽獎卷</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="user-info">
+                    <div class="info-item">
+                        <span class="info-label">名稱</span>
+                        <span class="info-value" id="userName"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">孩子 ID</span>
+                        <span class="info-value" id="userId"></span>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="action-btn logout" onclick="handleLogout()">登出</button>
+                </div>
+
+                <!-- 孩子導航 -->
+                <div id="childNav">
+                    <div class="nav-tabs">
+                        <button class="nav-tab active" onclick="switchTab('log-practice')">📝 登錄練琴</button>
+                        <button class="nav-tab" onclick="switchTab('practice-history')">📋 練琴紀錄</button>
+                        <button class="nav-tab" onclick="switchTab('request-game')">🎮 申請遊戲時間</button>
+                        <button class="nav-tab" onclick="switchTab('special-redemptions-child')">🎁 特殊兌換</button>
+                        <button class="nav-tab" onclick="switchTab('reward-history')">📜 兌換紀錄</button>
+                    </div>
+
+                    <!-- 登錄練琴時間 -->
+                    <div id="log-practice" class="tab-content active">
+                        <div class="form-section">
+                            <h3>📝 登錄今日練琴時間</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="practiceDate">日期</label>
+                                    <input type="date" id="practiceDate">
+                                </div>
+                                <div class="form-group">
+                                    <label for="practiceMinutes">練琴時間</label>
+                                    <select id="practiceMinutes">
+                                        <option value="15">15 分鐘</option>
+                                        <option value="30" selected>30 分鐘</option>
+                                        <option value="45">45 分鐘</option>
+                                        <option value="60">60 分鐘</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row full">
+                                <div class="form-group">
+                                    <label for="practiceNotes">備註 (練習內容等)</label>
+                                    <textarea id="practiceNotes" placeholder="記錄今天練習的曲目和內容..."></textarea>
+                                </div>
+                            </div>
+                            <button class="submit-btn" id="submitPracticeBtn" onclick="submitPracticeRecord()">提交練琴記錄</button>
+                        </div>
+                        <div id="submitPracticeResult"></div>
+                    </div>
+
+                    <!-- 練琴紀錄 -->
+                    <div id="practice-history" class="tab-content">
+                        <div class="form-section">
+                            <h3>📋 我的練琴紀錄</h3>
+                            <div id="practiceRecordsList" style="margin-top: 20px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 申請遊戲時間 -->
+                    <div id="request-game" class="tab-content">
+                        <div class="form-section">
+                            <h3>ℹ️ 兌換比例</h3>
+                            <div id="ratioInfo" class="ratio-info-box"></div>
+                        </div>
+                        <div class="form-section">
+                            <h3>🎮 申請遊戲時間</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="gameMinutes">申請時間 (15分鐘單位)</label>
+                                    <input type="number" id="gameMinutes" placeholder="例: 30" min="15" step="15" value="15">
+                                </div>
+                            </div>
+                            <button class="submit-btn" onclick="requestGameTime()">申請遊戲時間</button>
+                        </div>
+                        <div id="requestGameResult"></div>
+                    </div>
+
+                    <!-- 特殊兌換 -->
+                    <div id="special-redemptions-child" class="tab-content">
+                        <div class="form-section">
+                            <h3>🎁 可兌換項目</h3>
+                            <div id="srChildList" style="margin-top: 16px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 兌換紀錄 -->
+                    <div id="reward-history" class="tab-content">
+                        <div class="form-section">
+                            <h3>📜 兌換紀錄</h3>
+                            <div id="rewardHistoryList" style="margin-top: 16px;"></div>
+                        </div>
+                    </div>
+
+                </div><!-- /childNav -->
+            </div><!-- /dashboard -->
+
+        </div><!-- /login-section -->
+    </div><!-- /container -->
+
+    <script>
+        const API_BASE_URL = `${window.location.origin}/api`;
+        let currentToken = null;
+        let currentUserId = null;
+
+        // ── 通用工具 ──────────────────────────────────────────────
+
+        function showError(message) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 5000);
+        }
+
+        function showSuccess(message) {
+            const el = document.getElementById('successMessage');
+            el.textContent = message;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 3000);
+        }
+
+        function clearMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function formatDatetime(isoStr) {
+            if (!isoStr) return '';
+            const d = new Date(isoStr);
+            const y = d.getFullYear();
+            const mo = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const h = String(d.getHours()).padStart(2, '0');
+            const mi = String(d.getMinutes()).padStart(2, '0');
+            return `${y}/${mo}/${day} ${h}:${mi}`;
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': '⏳ 待審核',
+                'approved': '✅ 已批准',
+                'rejected': '❌ 已拒絕'
+            };
+            return statusMap[status] || status;
+        }
+
+        // ── 記住帳號 ──────────────────────────────────────────────
+
+        function loadRememberedCredentials() {
+            const saved = JSON.parse(localStorage.getItem('child_remember') || 'null');
+            if (saved) {
+                document.getElementById('childId').value = saved.childId || '';
+                document.getElementById('childRemember').checked = true;
+            }
+        }
+        loadRememberedCredentials();
+
+        // ── 保留登入狀態 (60 分鐘) ────────────────────────────────
+
+        const SESSION_KEY = 'child_session';
+        const SESSION_TTL = 60 * 60 * 1000; // 60 minutes in ms
+
+        function saveSession(token, childId, name) {
+            localStorage.setItem(SESSION_KEY, JSON.stringify({
+                token, childId, name, savedAt: Date.now()
+            }));
+        }
+
+        function clearSession() {
+            localStorage.removeItem(SESSION_KEY);
+        }
+
+        function tryRestoreSession() {
+            const raw = localStorage.getItem(SESSION_KEY);
+            if (!raw) return;
+            const s = JSON.parse(raw);
+            if (!s.token || Date.now() - s.savedAt > SESSION_TTL) {
+                clearSession();
+                return;
+            }
+            currentToken = s.token;
+            currentUserId = s.childId;
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('dashboard').classList.add('active');
+            document.getElementById('dashboardTitle').textContent = `歡迎，${s.name}！`;
+            document.getElementById('userName').textContent = s.name;
+            document.getElementById('userId').textContent = s.childId;
+            loadChildDashboard(currentUserId);
+        }
+        tryRestoreSession();
+
+        // ── 登入 ──────────────────────────────────────────────────
+
+        async function handleLogin() {
+            const loginBtn = document.getElementById('loginBtn');
+            const loading = document.getElementById('loading');
+            loginBtn.disabled = true;
+            loading.style.display = 'block';
+            clearMessages();
+
+            try {
+                const childId = document.getElementById('childId').value;
+                const password = document.getElementById('childPassword').value;
+                if (!childId || !password) throw new Error('請輸入孩子ID和密碼');
+
+                if (document.getElementById('childRemember').checked) {
+                    localStorage.setItem('child_remember', JSON.stringify({ childId }));
+                } else {
+                    localStorage.removeItem('child_remember');
+                }
+
+                const response = await fetch(`${API_BASE_URL}/auth/child/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ child_id: childId, password })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '登入失敗');
+                }
+
+                const data = await response.json();
+                currentToken = data.access_token;
+                currentUserId = data.child_id;
+                saveSession(data.access_token, data.child_id, data.name);
+
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('dashboard').classList.add('active');
+                document.getElementById('dashboardTitle').textContent = `歡迎，${data.name}！`;
+                document.getElementById('userName').textContent = data.name;
+                document.getElementById('userId').textContent = data.child_id;
+
+                loadChildDashboard(currentUserId);
+                showSuccess('登入成功！');
+
+            } catch (error) {
+                showError('登入失敗: ' + error.message);
+            } finally {
+                loginBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+
+        // Enter 鍵觸發登入
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && document.getElementById('loginForm').offsetParent !== null) handleLogin();
+        });
+
+        // ── 登出 ──────────────────────────────────────────────────
+
+        function handleLogout() {
+            currentToken = null;
+            currentUserId = null;
+            clearSession();
+            window.location.href = '/';
+        }
+
+        // ── Tab 切換 ──────────────────────────────────────────────
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'practice-history') loadPracticeRecords(currentUserId);
+            else if (tabName === 'request-game') loadRatioInfo();
+            else if (tabName === 'reward-history') loadRewardHistory(currentUserId);
+            else if (tabName === 'special-redemptions-child') loadSpecialRedemptionsChild(currentUserId);
+        }
+
+        // ── 孩子儀表板 ────────────────────────────────────────────
+
+        function loadChildDashboard(childId) {
+            document.getElementById('practiceDate').valueAsDate = new Date();
+            const lastNotes = localStorage.getItem(`lastPracticeNotes_${childId}`);
+            if (lastNotes) document.getElementById('practiceNotes').value = lastNotes;
+            loadPracticeRecords(childId);
+            loadGameBalance(childId);
+        }
+
+        // ── 提交練琴記錄 ──────────────────────────────────────────
+
+        async function submitPracticeRecord() {
+            const btn = document.getElementById('submitPracticeBtn');
+            try {
+                if (!currentToken) throw new Error('未登入');
+
+                const date = document.getElementById('practiceDate').value;
+                const minutes = parseInt(document.getElementById('practiceMinutes').value);
+                const notes = document.getElementById('practiceNotes').value;
+
+                if (!date) throw new Error('請選擇日期');
+
+                btn.disabled = true;
+                btn.textContent = '提交中...';
+
+                const response = await fetch(`${API_BASE_URL}/practice/record`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({
+                        date: `${date}T00:00:00`,
+                        time: null,
+                        practice_minutes: minutes,
+                        notes: notes
+                    })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '提交失敗');
+                }
+
+                localStorage.setItem(`lastPracticeNotes_${currentUserId}`, notes);
+                document.getElementById('practiceMinutes').value = '30';
+
+                btn.classList.add('submit-btn--success');
+                btn.textContent = '✓ 已提交';
+                setTimeout(() => {
+                    btn.classList.remove('submit-btn--success');
+                    btn.disabled = false;
+                    btn.textContent = '提交練琴記錄';
+                }, 5000);
+
+                loadPracticeRecords(currentUserId);
+            } catch (error) {
+                btn.disabled = false;
+                btn.textContent = '提交練琴記錄';
+                showError('提交練琴記錄失敗: ' + error.message);
+            }
+        }
+
+        // ── 練琴紀錄 ──────────────────────────────────────────────
+
+        async function loadPracticeRecords(childId) {
+            try {
+                if (!currentToken) return;
+
+                const response = await fetch(`${API_BASE_URL}/practice/records/${childId}`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+
+                if (!response.ok) throw new Error('加載失敗');
+
+                const data = await response.json();
+                const list = document.getElementById('practiceRecordsList');
+
+                if (!data.records || data.records.length === 0) {
+                    list.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">暫無練琴紀錄</p>';
+                    return;
+                }
+
+                list.innerHTML = `
+                    <div style="margin-bottom: 15px; color: #666;">
+                        <strong>批准紀錄: ${data.approved_records}</strong> |
+                        <strong>待審核: ${data.pending_records}</strong> |
+                        <strong>已批准總時間: ${data.total_approved_minutes}</strong> 分鐘
+                    </div>
+                ` + data.records.map(r => `
+                    <div class="record-item">
+                        <div class="record-header">
+                            <div class="record-date">${r.date}${r.time ? ' ' + r.time.substring(0, 5) : ''}</div>
+                            <div class="record-status ${r.status}">${getStatusText(r.status)}</div>
+                        </div>
+                        <div class="record-details">
+                            <div>⏱️ 練琴時間: ${r.practice_minutes} 分鐘</div>
+                            <div>📝 備註: ${r.notes || '無'}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('加載練琴紀錄失敗:', error);
+            }
+        }
+
+        // ── 申請遊戲時間 ──────────────────────────────────────────
+
+        async function requestGameTime() {
+            try {
+                if (!currentToken) throw new Error('未登入');
+
+                const minutes = parseInt(document.getElementById('gameMinutes').value);
+                if (!minutes || minutes < 15) throw new Error('申請時間至少 15 分鐘');
+                if (minutes % 15 !== 0) throw new Error('申請時間必須以 15 分鐘為單位');
+
+                const response = await fetch(`${API_BASE_URL}/awards/request`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({ game_minutes: minutes })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '申請失敗');
+                }
+
+                const data = await response.json();
+                showSuccess(`申請成功！已扣除 ${data.game_minutes_used} 點，剩餘 ${data.remaining_balance} 點`);
+                document.getElementById('gameMinutes').value = '15';
+                loadGameBalance(currentUserId);
+            } catch (error) {
+                showError('申請遊戲時間失敗: ' + error.message);
+            }
+        }
+
+        // ── 遊戲時間餘額（含抽獎卷） ─────────────────────────────
+
+        async function loadGameBalance(childId) {
+            try {
+                if (!currentToken) return;
+                const response = await fetch(`${API_BASE_URL}/awards/balance/${childId}`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                if (!response.ok) throw new Error('加載失敗');
+                const data = await response.json();
+                document.getElementById('headerBalanceValue').textContent = data.game_balance;
+                document.getElementById('headerLotteryValue').textContent = data.lottery_tickets || 0;
+            } catch (error) {
+                console.error('加載餘額失敗:', error);
+            }
+        }
+
+        // ── 兌換比例 ──────────────────────────────────────────────
+
+        async function loadRatioInfo() {
+            try {
+                if (!currentToken) return;
+                const response = await fetch(`${API_BASE_URL}/awards/ratio`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                if (!response.ok) return;
+                const data = await response.json();
+                document.getElementById('ratioInfo').textContent = data.description;
+            } catch (error) {
+                console.error('加載兌換比例失敗:', error);
+            }
+        }
+
+        // ── 兌換紀錄 ──────────────────────────────────────────────
+
+        async function loadRewardHistory(childId) {
+            const list = document.getElementById('rewardHistoryList');
+            list.innerHTML = '<p style="text-align:center;color:var(--text-subdued);">載入中...</p>';
+            try {
+                if (!currentToken) return;
+                const [gameRes, srRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/awards/request-history/${childId}`, {
+                        headers: { 'Authorization': `Bearer ${currentToken}` }
+                    }),
+                    fetch(`${API_BASE_URL}/special-redemptions/records/${childId}`, {
+                        headers: { 'Authorization': `Bearer ${currentToken}` }
+                    })
+                ]);
+
+                const gameData = gameRes.ok ? await gameRes.json() : { requests: [] };
+                const srData = srRes.ok ? await srRes.json() : { records: [] };
+
+                const gameItems = (gameData.requests || []).map(r => ({
+                    date: new Date(r.request_date),
+                    points: r.game_minutes,
+                    label: '🎮 兌換遊戲時間'
+                }));
+                const srItems = (srData.records || []).map(r => ({
+                    date: new Date(r.redeemed_at),
+                    points: r.points_spent,
+                    label: `🎁 ${r.content}`
+                }));
+
+                const all = [...gameItems, ...srItems].sort((a, b) => b.date - a.date);
+
+                if (all.length === 0) {
+                    list.innerHTML = '<p style="color:var(--text-subdued);text-align:center;padding:20px;">尚無兌換紀錄</p>';
+                    return;
+                }
+
+                list.innerHTML = all.map(r => `
+                    <div class="record-item">
+                        <div class="record-header">
+                            <div>
+                                <div class="record-date">${r.label}</div>
+                                <div style="font-size:12px;color:var(--text-subdued);margin-top:3px;">
+                                    ${formatDatetime(r.date.toISOString())}
+                                </div>
+                            </div>
+                            <div class="reward-cost-badge">− ${r.points} 點</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                list.innerHTML = `<p style="color:var(--danger)">載入失敗：${error.message}</p>`;
+            }
+        }
+
+        // ── 特殊兌換（孩子端） ────────────────────────────────────
+
+        async function loadSpecialRedemptionsChild(childId) {
+            const listEl = document.getElementById('srChildList');
+            listEl.innerHTML = '<p style="text-align:center;color:var(--text-subdued);">載入中...</p>';
+            try {
+                const res = await fetch(`${API_BASE_URL}/special-redemptions/child/${childId}`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                const data = await res.json();
+                const items = data.items || [];
+                if (items.length === 0) {
+                    listEl.innerHTML = '<p style="color:var(--text-subdued);text-align:center;padding:20px;">目前沒有可兌換的項目</p>';
+                    return;
+                }
+                listEl.innerHTML = items.map(item => {
+                    const expiryText = item.expires_at
+                        ? `<span style="font-size:11px;color:var(--text-subdued);">期限：${formatDatetime(item.expires_at)}</span>`
+                        : '';
+                    const quantityText = item.quantity !== null
+                        ? `<span style="font-size:11px;color:var(--text-subdued);">剩餘數量：${item.quantity}</span>`
+                        : '';
+                    return `
+                    <div class="record-item">
+                        <div class="record-header">
+                            <div>
+                                <div class="record-date">🎁 ${item.content}</div>
+                                <div style="margin-top:4px;display:flex;gap:10px;">${quantityText}${expiryText}</div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div class="reward-cost-badge">${item.points_cost} 點</div>
+                                <button class="submit-btn" style="padding:6px 14px;font-size:13px;margin:0;"
+                                    onclick="redeemSpecialItem(${item.id}, '${item.content.replace(/'/g, "\\'")}', ${item.points_cost})">兌換</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                listEl.innerHTML = `<p style="color:var(--danger)">載入失敗：${e.message}</p>`;
+            }
+        }
+
+        async function redeemSpecialItem(itemId, content, cost) {
+            if (!confirm(`確定要用 ${cost} 點兌換「${content}」嗎？`)) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/special-redemptions/${itemId}/redeem`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || '兌換失敗');
+                alert(`✅ 兌換成功！剩餘點數：${data.remaining_balance} 點`);
+                loadGameBalance(currentUserId);
+                loadSpecialRedemptionsChild(currentUserId);
+            } catch (e) {
+                alert('兌換失敗：' + e.message);
+            }
+        }
+    </script>
+</body>
+</html>
