@@ -89,6 +89,7 @@
                         <button class="nav-tab" onclick="switchTab('practice-history')">📋 練琴紀錄</button>
                         <button class="nav-tab" onclick="switchTab('request-game')">🎮 申請遊戲時間</button>
                         <button class="nav-tab" onclick="switchTab('special-redemptions-child')">🎁 特殊兌換</button>
+                        <button class="nav-tab" onclick="switchTab('lottery-child')">🎰 抽獎</button>
                         <button class="nav-tab" onclick="switchTab('reward-history')">📜 兌換紀錄</button>
                     </div>
 
@@ -154,6 +155,34 @@
                         <div class="form-section">
                             <h3>🎁 可兌換項目</h3>
                             <div id="srChildList" style="margin-top: 16px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 抽獎 -->
+                    <div id="lottery-child" class="tab-content">
+                        <div id="lotteryRoundInfoSection" class="form-section" style="display:none;">
+                            <h3>🎰 本輪抽獎</h3>
+                            <div id="lotteryRoundInfo" style="margin-top:15px;"></div>
+                        </div>
+                        <div id="lotteryNoRoundSection" class="form-section" style="display:none;">
+                            <p style="text-align:center;color:var(--text-subdued);padding:20px;">目前沒有進行中的抽獎活動，請等候家長設定。</p>
+                        </div>
+                        <div id="lotteryDrawSection" class="form-section" style="display:none;">
+                            <h3>🎟️ 進行抽獎</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="lotteryDrawCount">抽獎張數</label>
+                                    <input type="number" id="lotteryDrawCount" value="1" min="1">
+                                </div>
+                                <div class="form-group" style="justify-content:flex-end;display:flex;align-items:flex-end;">
+                                    <button class="submit-btn" style="margin:0;" onclick="performDraw()">🎰 開始抽獎</button>
+                                </div>
+                            </div>
+                            <div id="lotteryDrawResult" style="margin-top:12px;"></div>
+                        </div>
+                        <div class="form-section">
+                            <h3>📜 抽獎紀錄</h3>
+                            <div id="lotteryHistoryList" style="margin-top:15px;"></div>
                         </div>
                     </div>
 
@@ -341,6 +370,7 @@
             else if (tabName === 'request-game') loadRatioInfo();
             else if (tabName === 'reward-history') loadRewardHistory(currentUserId);
             else if (tabName === 'special-redemptions-child') loadSpecialRedemptionsChild(currentUserId);
+            else if (tabName === 'lottery-child') loadLotteryTab();
         }
 
         // ── 孩子儀表板 ────────────────────────────────────────────
@@ -593,17 +623,25 @@
                     const quantityText = item.quantity !== null
                         ? `<span style="font-size:11px;color:var(--text-subdued);">剩餘數量：${item.quantity}</span>`
                         : '';
+                    const lotteryTag = item.from_lottery
+                        ? `<span style="font-size:11px;background:#e67e22;color:#fff;padding:1px 6px;border-radius:4px;margin-left:4px;">🎰 抽獎獎品</span>`
+                        : '';
+                    const icon = item.from_lottery ? '🏅' : '🎁';
+                    const btnLabel = item.from_lottery ? '領取' : '兌換';
+                    const costBadge = item.points_cost > 0
+                        ? `<div class="reward-cost-badge">${item.points_cost} 點</div>`
+                        : `<div class="reward-cost-badge" style="background:linear-gradient(135deg,#e67e22,#f39c12);">免費</div>`;
                     return `
                     <div class="record-item">
                         <div class="record-header">
                             <div>
-                                <div class="record-date">🎁 ${item.content}</div>
-                                <div style="margin-top:4px;display:flex;gap:10px;">${quantityText}${expiryText}</div>
+                                <div class="record-date">${icon} ${item.content}${lotteryTag}</div>
+                                <div style="margin-top:4px;display:flex;gap:10px;flex-wrap:wrap;">${quantityText}${expiryText}</div>
                             </div>
                             <div style="display:flex;align-items:center;gap:10px;">
-                                <div class="reward-cost-badge">${item.points_cost} 點</div>
+                                ${costBadge}
                                 <button class="submit-btn" style="padding:6px 14px;font-size:13px;margin:0;"
-                                    onclick="redeemSpecialItem(${item.id}, '${item.content.replace(/'/g, "\\'")}', ${item.points_cost})">兌換</button>
+                                    onclick="redeemSpecialItem(${item.id}, '${item.content.replace(/'/g, "\\'")}', ${item.points_cost})">${btnLabel}</button>
                             </div>
                         </div>
                     </div>`;
@@ -614,7 +652,10 @@
         }
 
         async function redeemSpecialItem(itemId, content, cost) {
-            if (!confirm(`確定要用 ${cost} 點兌換「${content}」嗎？`)) return;
+            const msg = cost > 0
+                ? `確定要用 ${cost} 點兌換「${content}」嗎？`
+                : `確定要領取抽獎獎品「${content}」嗎？`;
+            if (!confirm(msg)) return;
             try {
                 const res = await fetch(`${API_BASE_URL}/special-redemptions/${itemId}/redeem`, {
                     method: 'POST',
@@ -622,11 +663,143 @@
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || '兌換失敗');
-                alert(`✅ 兌換成功！剩餘點數：${data.remaining_balance} 點`);
+                const successMsg = cost > 0
+                    ? `✅ 兌換成功！剩餘點數：${data.remaining_balance} 點`
+                    : `✅ 獎品「${content}」領取成功！`;
+                alert(successMsg);
                 loadGameBalance(currentUserId);
                 loadSpecialRedemptionsChild(currentUserId);
+                loadLotteryHistory();
             } catch (e) {
                 alert('兌換失敗：' + e.message);
+            }
+        }
+
+        // ── 抽獎（孩子端） ────────────────────────────────────────
+
+        async function loadLotteryTab() {
+            const roundSection = document.getElementById('lotteryRoundInfoSection');
+            const noRoundSection = document.getElementById('lotteryNoRoundSection');
+            const drawSection = document.getElementById('lotteryDrawSection');
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/lottery/active?child_id=${currentUserId}`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                const data = await res.json();
+                if (data.active) {
+                    roundSection.style.display = 'block';
+                    noRoundSection.style.display = 'none';
+                    drawSection.style.display = 'block';
+                    renderLotteryRound(data.round);
+                } else {
+                    roundSection.style.display = 'none';
+                    noRoundSection.style.display = 'block';
+                    drawSection.style.display = 'none';
+                }
+            } catch (e) {
+                noRoundSection.style.display = 'block';
+                roundSection.style.display = 'none';
+                drawSection.style.display = 'none';
+            }
+
+            loadLotteryHistory();
+        }
+
+        function renderLotteryRound(rnd) {
+            const pityPct = Math.min(100, Math.round((rnd.draws_used / rnd.pity_limit) * 100));
+            const prizesHtml = rnd.prizes.map(p => `
+                <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #eee;">
+                    <span>${p.is_jackpot ? '🏆 ' : '🎁 '}${p.name}</span>
+                    <span style="font-weight:600;color:#667eea;">${p.probability}%</span>
+                </div>`).join('');
+
+            document.getElementById('lotteryRoundInfo').innerHTML = `
+                <div class="record-item">
+                    <div style="margin-bottom:10px;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                            <span style="font-size:13px;color:var(--text-subdued);">保底進度（${rnd.draws_used} / ${rnd.pity_limit} 抽）</span>
+                            <span style="font-size:13px;font-weight:600;">還差 ${rnd.draws_until_pity} 抽必中大獎</span>
+                        </div>
+                        <div style="background:#eee;border-radius:8px;height:10px;overflow:hidden;">
+                            <div style="background:linear-gradient(90deg,#667eea,#764ba2);height:100%;width:${pityPct}%;transition:width .3s;"></div>
+                        </div>
+                    </div>
+                    ${prizesHtml}
+                </div>`;
+        }
+
+        async function performDraw() {
+            const tickets = parseInt(document.getElementById('lotteryDrawCount').value);
+            const resultEl = document.getElementById('lotteryDrawResult');
+            if (!tickets || tickets < 1) {
+                resultEl.innerHTML = '<p style="color:var(--danger)">請輸入至少 1 張</p>';
+                return;
+            }
+            try {
+                const res = await fetch(`${API_BASE_URL}/lottery/draw`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tickets })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || '抽獎失敗');
+                renderDrawResults(data, resultEl);
+                loadGameBalance(currentUserId);
+                loadLotteryTab();
+            } catch (e) {
+                resultEl.innerHTML = `<p style="color:var(--danger)">抽獎失敗：${e.message}</p>`;
+            }
+        }
+
+        function renderDrawResults(data, container) {
+            const cards = data.results.map(r => {
+                const bg = r.is_jackpot ? 'linear-gradient(135deg,#f6d365,#fda085)' : 'linear-gradient(135deg,#a1c4fd,#c2e9fb)';
+                const tag = r.is_pity ? ' <span style="font-size:11px;background:#e74c3c;color:#fff;padding:1px 5px;border-radius:4px;">保底</span>' : '';
+                return `
+                    <div style="background:${bg};border-radius:10px;padding:14px;text-align:center;animation:fadeIn .3s;">
+                        <div style="font-size:22px;">${r.is_jackpot ? '🏆' : '🎁'}</div>
+                        <div style="font-weight:700;font-size:15px;margin-top:4px;">${r.prize_name}${tag}</div>
+                        <div style="font-size:12px;opacity:.75;margin-top:2px;">第 ${r.draw_index} 抽</div>
+                    </div>`;
+            }).join('');
+            container.innerHTML = `
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:10px;">${cards}</div>
+                <p style="font-size:13px;color:var(--text-subdued);">
+                    消耗 ${data.tickets_used} 張　剩餘 ${data.remaining_tickets} 張
+                    ${data.round_status === 'finished' ? '　<strong style="color:var(--success)">🎉 本輪已結束！</strong>' : ''}
+                </p>`;
+        }
+
+        async function loadLotteryHistory() {
+            const list = document.getElementById('lotteryHistoryList');
+            list.innerHTML = '<p style="text-align:center;color:var(--text-subdued);">載入中...</p>';
+            try {
+                const res = await fetch(`${API_BASE_URL}/lottery/history?child_id=${currentUserId}`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                const data = await res.json();
+                const results = data.results || [];
+                if (results.length === 0) {
+                    list.innerHTML = '<p style="text-align:center;color:var(--text-subdued);padding:20px;">尚無抽獎紀錄</p>';
+                    return;
+                }
+                list.innerHTML = results.map(r => `
+                    <div class="record-item">
+                        <div class="record-header">
+                            <div>
+                                <div class="record-date">${r.is_jackpot ? '🏆 ' : '🎁 '}${r.prize_name}${r.is_pity ? ' <span style="font-size:11px;background:#e74c3c;color:#fff;padding:1px 5px;border-radius:4px;">保底</span>' : ''}</div>
+                                <div style="font-size:12px;color:var(--text-subdued);margin-top:3px;">
+                                    第 ${r.draw_index} 抽　${formatDatetime(r.created_at)}
+                                </div>
+                            </div>
+                            <div style="font-size:12px;color:${r.redeemed ? 'var(--success)' : 'var(--text-subdued)'};">
+                                ${r.redeemed ? '✅ 已兌換' : '未兌換'}
+                            </div>
+                        </div>
+                    </div>`).join('');
+            } catch (e) {
+                list.innerHTML = `<p style="color:var(--danger)">載入失敗：${e.message}</p>`;
             }
         }
     </script>

@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import db, SpecialRedemption, SpecialRedemptionRecord, Child, Parent
+from models import db, SpecialRedemption, SpecialRedemptionRecord, Child, Parent, LotteryDrawResult
 from datetime import datetime
 
 special_redemptions_bp = Blueprint('special_redemptions', __name__)
@@ -134,7 +134,8 @@ def list_child_redemptions(child_id):
                 'content': item.content,
                 'points_cost': item.points_cost,
                 'quantity': item.quantity,
-                'expires_at': item.expires_at.isoformat() + 'Z' if item.expires_at else None
+                'expires_at': item.expires_at.isoformat() + 'Z' if item.expires_at else None,
+                'from_lottery': item.lottery_draw_result_id is not None,
             }
             for item in active
         ]
@@ -201,6 +202,13 @@ def redeem_special_item(item_id):
     child.game_balance -= item.points_cost
     if item.quantity is not None:
         item.quantity -= 1
+
+    # If this redemption came from a lottery draw, mark that draw as redeemed
+    if item.lottery_draw_result_id:
+        draw_result = LotteryDrawResult.query.get(item.lottery_draw_result_id)
+        if draw_result:
+            draw_result.redeemed = True
+            draw_result.redeemed_at = now
 
     db.session.add(record)
     db.session.commit()

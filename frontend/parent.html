@@ -80,6 +80,7 @@
                         <button class="nav-tab" onclick="switchTab('approved-records')">✅ 已批准紀錄</button>
                         <button class="nav-tab" onclick="switchTab('manage-children')">👤 管理兒童帳號</button>
                         <button class="nav-tab" onclick="switchTab('special-redemptions-mgmt')">🎁 特殊兌換</button>
+                        <button class="nav-tab" onclick="switchTab('lottery-mgmt')">🎰 設定抽獎</button>
                         <button class="nav-tab" onclick="switchTab('parent-settings')">⚙️ 帳號設定</button>
                     </div>
 
@@ -177,6 +178,13 @@
                         <div class="form-section">
                             <h3>📋 目前特殊兌換項目</h3>
                             <div id="srManageList" style="margin-top: 15px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 抽獎管理 -->
+                    <div id="lottery-mgmt" class="tab-content">
+                        <div id="lotteryChildSections" style="display:flex;flex-direction:column;gap:20px;">
+                            <div style="text-align:center;color:var(--text-subdued);padding:20px;">載入中...</div>
                         </div>
                     </div>
 
@@ -373,6 +381,7 @@
             if (tabName === 'approved-records') loadApprovedRecords();
             else if (tabName === 'manage-children') loadManageChildren();
             else if (tabName === 'special-redemptions-mgmt') loadSpecialRedemptionsMgmt();
+            else if (tabName === 'lottery-mgmt') loadLotteryMgmt();
         }
 
         // ── 家長儀表板 ────────────────────────────────────────────
@@ -1036,6 +1045,183 @@
                 loadSpecialRedemptionsMgmt();
             } catch (e) {
                 alert('刪除失敗：' + e.message);
+            }
+        }
+
+        // ── 抽獎管理（家長） ──────────────────────────────────────
+
+        let _lotteryChildren = [];
+
+        async function loadLotteryMgmt() {
+            const container = document.getElementById('lotteryChildSections');
+            try {
+                const res = await fetch(`${API_BASE_URL}/practice/parent/children`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                const data = await res.json();
+                _lotteryChildren = data.children || [];
+                if (_lotteryChildren.length === 0) {
+                    container.innerHTML = '<div style="text-align:center;color:var(--text-subdued);padding:20px;">尚無孩子帳號</div>';
+                    return;
+                }
+                container.innerHTML = _lotteryChildren.map(c => `
+                    <div class="form-section" id="lottery-child-${c.id}">
+                        <h3>👧 ${c.name}（${c.id}）</h3>
+                        <div id="lottery-content-${c.id}" style="margin-top:12px;">
+                            <div style="color:var(--text-subdued);font-size:13px;">載入中...</div>
+                        </div>
+                    </div>`).join('');
+                await Promise.all(_lotteryChildren.map(c => refreshChildLotterySection(c)));
+            } catch (e) {
+                container.innerHTML = '<div style="text-align:center;color:var(--danger);padding:20px;">載入失敗</div>';
+            }
+        }
+
+        async function refreshChildLotterySection(child) {
+            const contentEl = document.getElementById(`lottery-content-${child.id}`);
+            if (!contentEl) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/lottery/active?child_id=${child.id}`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                const data = await res.json();
+                if (data.active && data.round) {
+                    const rnd = data.round;
+                    const prizesHtml = rnd.prizes.map(p =>
+                        `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee;">
+                            <span>${p.is_jackpot ? '🏆 ' : ''}${p.name}</span>
+                            <span style="color:#667eea;font-weight:600;">${p.probability}%</span>
+                        </div>`
+                    ).join('');
+                    contentEl.innerHTML = `
+                        <div class="record-item">
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+                                <div>
+                                    <div style="margin-top:4px;">已抽次數：${rnd.draws_used} 次
+                                        <span style="color:var(--text-subdued);font-size:13px;">還差 ${rnd.draws_until_pity} 抽必中大獎（保底 ${rnd.pity_limit} 次）</span>
+                                    </div>
+                                </div>
+                                <button class="action-btn" style="padding:6px 14px;" onclick="endLotteryRound(${rnd.id}, '${child.id}')">結束本輪</button>
+                            </div>
+                            <div style="margin-top:10px;">${prizesHtml}</div>
+                        </div>`;
+                } else {
+                    const cid = child.id;
+                    contentEl.innerHTML = `
+                        <div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>保底次數（幾抽內一定中大獎）</label>
+                                    <input type="number" id="lotteryPity-${cid}" value="10" min="1">
+                                </div>
+                            </div>
+                            <div style="margin-top:12px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                                    <label style="font-weight:600;">獎品設定（機率總和必須 = 100）</label>
+                                    <span id="lotteryProbTotal-${cid}" style="font-size:13px;font-weight:600;color:var(--danger);">總和: 0</span>
+                                </div>
+                                <div id="lotteryPrizeRows-${cid}"></div>
+                                <button type="button" class="action-btn" style="margin-top:8px;padding:6px 14px;font-size:13px;" onclick="addPrizeRow('${cid}')">+ 新增獎品</button>
+                            </div>
+                            <button class="submit-btn" style="margin-top:15px;" onclick="createLotteryRound('${cid}')">建立抽獎輪次</button>
+                            <div id="lotteryCreateResult-${cid}" style="margin-top:12px;"></div>
+                        </div>`;
+                    addPrizeRow(cid, true);
+                    addPrizeRow(cid, false);
+                }
+            } catch (e) {
+                contentEl.innerHTML = '<div style="color:var(--danger);font-size:13px;">載入失敗</div>';
+            }
+        }
+
+        function addPrizeRow(childId, isJackpot = false) {
+            const container = document.getElementById(`lotteryPrizeRows-${childId}`);
+            if (!container) return;
+            const row = document.createElement('div');
+            row.className = 'form-row';
+            row.style.cssText = 'align-items:flex-end;margin-bottom:6px;';
+            row.innerHTML = `
+                <div class="form-group" style="flex:2;">
+                    <label>獎品名稱</label>
+                    <input type="text" class="prize-name" placeholder="${isJackpot ? '大獎（例: 玩具車）' : '普通獎（例: 貼紙）'}">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>機率 (%)</label>
+                    <input type="number" class="prize-prob" min="1" max="99" value="${isJackpot ? '5' : '50'}" oninput="updateProbTotal('${childId}')">
+                </div>
+                <div class="form-group" style="flex:0 0 auto;">
+                    <label>大獎</label>
+                    <input type="checkbox" class="prize-jackpot" style="width:20px;height:20px;margin-top:10px;" ${isJackpot ? 'checked' : ''}>
+                </div>
+                <div style="flex:0 0 auto;padding-bottom:6px;">
+                    <button type="button" class="action-btn" style="padding:6px 10px;font-size:13px;background:var(--danger);" onclick="removePrizeRow(this, '${childId}')">✕</button>
+                </div>`;
+            container.appendChild(row);
+            updateProbTotal(childId);
+        }
+
+        function removePrizeRow(btn, childId) {
+            btn.closest('.form-row').remove();
+            updateProbTotal(childId);
+        }
+
+        function updateProbTotal(childId) {
+            const container = document.getElementById(`lotteryPrizeRows-${childId}`);
+            if (!container) return;
+            const probs = [...container.querySelectorAll('.prize-prob')].map(i => parseInt(i.value) || 0);
+            const total = probs.reduce((a, b) => a + b, 0);
+            const el = document.getElementById(`lotteryProbTotal-${childId}`);
+            if (!el) return;
+            el.textContent = `總和: ${total}`;
+            el.style.color = total === 100 ? 'var(--success)' : 'var(--danger)';
+        }
+
+        async function createLotteryRound(childId) {
+            const pityEl = document.getElementById(`lotteryPity-${childId}`);
+            const pityLimit = parseInt(pityEl ? pityEl.value : '');
+            const resultEl = document.getElementById(`lotteryCreateResult-${childId}`);
+            const prizeContainer = document.getElementById(`lotteryPrizeRows-${childId}`);
+
+            const prizes = [...prizeContainer.querySelectorAll('.form-row')].map(row => ({
+                name: row.querySelector('.prize-name').value.trim(),
+                probability: parseInt(row.querySelector('.prize-prob').value) || 0,
+                is_jackpot: row.querySelector('.prize-jackpot').checked,
+            }));
+
+            if (!pityLimit || pityLimit < 1) { resultEl.innerHTML = '<p style="color:var(--danger)">保底次數至少為 1</p>'; return; }
+            if (prizes.some(p => !p.name)) { resultEl.innerHTML = '<p style="color:var(--danger)">請填寫所有獎品名稱</p>'; return; }
+
+            const child = _lotteryChildren.find(c => c.id === childId);
+            const childName = child ? child.name : childId;
+            try {
+                const res = await fetch(`${API_BASE_URL}/lottery/rounds`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ child_id: childId, pity_limit: pityLimit, prizes })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    resultEl.innerHTML = `<p style="color:var(--danger)">❌ 建立失敗：${data.error}</p>`;
+                    return;
+                }
+                if (child) await refreshChildLotterySection(child);
+            } catch (e) {
+                resultEl.innerHTML = `<p style="color:var(--danger)">❌ 建立失敗：${e.message}</p>`;
+            }
+        }
+
+        async function endLotteryRound(roundId, childId) {
+            if (!confirm('確定要結束這個抽獎輪次？')) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/lottery/rounds/${roundId}/finish`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                if (!res.ok) throw new Error('結束失敗');
+                const child = _lotteryChildren.find(c => c.id === childId);
+                if (child) await refreshChildLotterySection(child);
+            } catch (e) {
+                alert('結束失敗：' + e.message);
             }
         }
     </script>

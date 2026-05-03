@@ -86,6 +86,7 @@ class SpecialRedemption(db.Model):
     quantity = db.Column(db.Integer, nullable=True)        # Max redemptions, None = unlimited
     expires_at = db.Column(db.DateTime, nullable=True)     # Expiry date, None = no expiry
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    lottery_draw_result_id = db.Column(db.Integer, db.ForeignKey('lottery_draw_results.id'), nullable=True)
 
     child = db.relationship('Child', backref='special_redemptions', foreign_keys=[child_id])
     records = db.relationship('SpecialRedemptionRecord', backref='redemption', lazy=True, cascade='all, delete-orphan')
@@ -102,3 +103,49 @@ class SpecialRedemptionRecord(db.Model):
     redeemed_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     child = db.relationship('Child', backref='special_redemption_records', foreign_keys=[child_id])
+
+
+class LotteryRound(db.Model):
+    """A lottery round set up by a parent for a child"""
+    __tablename__ = 'lottery_rounds'
+
+    id = db.Column(db.Integer, primary_key=True)
+    parent_id = db.Column(db.Integer, db.ForeignKey('parents.id'), nullable=False)
+    child_id = db.Column(db.String(20), db.ForeignKey('children.id'), nullable=False)
+    pity_limit = db.Column(db.Integer, nullable=False)
+    draws_used = db.Column(db.Integer, default=0)
+    status = db.Column(db.String(20), default='active')   # active / finished
+    jackpot_hit = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    finished_at = db.Column(db.DateTime, nullable=True)
+
+    prizes = db.relationship('LotteryPrize', backref='round', lazy=True, cascade='all, delete-orphan')
+    draw_results = db.relationship('LotteryDrawResult', backref='round', lazy=True, cascade='all, delete-orphan')
+
+
+class LotteryPrize(db.Model):
+    """A prize option within a lottery round"""
+    __tablename__ = 'lottery_prizes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    round_id = db.Column(db.Integer, db.ForeignKey('lottery_rounds.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    probability = db.Column(db.Integer, nullable=False)   # 1–99, all prizes in round must sum to 100
+    is_jackpot = db.Column(db.Boolean, default=False)
+
+
+class LotteryDrawResult(db.Model):
+    """Single draw result within a lottery round"""
+    __tablename__ = 'lottery_draw_results'
+
+    id = db.Column(db.Integer, primary_key=True)
+    round_id = db.Column(db.Integer, db.ForeignKey('lottery_rounds.id'), nullable=False)
+    child_id = db.Column(db.String(20), db.ForeignKey('children.id'), nullable=False)
+    prize_id = db.Column(db.Integer, db.ForeignKey('lottery_prizes.id'), nullable=False)
+    prize_name = db.Column(db.String(100), nullable=False)  # snapshot
+    is_jackpot = db.Column(db.Boolean, nullable=False)       # snapshot
+    is_pity = db.Column(db.Boolean, default=False)           # snapshot
+    draw_index = db.Column(db.Integer, nullable=False)       # 1-based index within the round
+    redeemed = db.Column(db.Boolean, default=False)
+    redeemed_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

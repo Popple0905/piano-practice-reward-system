@@ -27,12 +27,14 @@ def create_app(config_name='development'):
     from routes.awards import awards_bp
     from routes.management import management_bp
     from routes.special_redemptions import special_redemptions_bp
+    from routes.lottery import lottery_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(practice_bp, url_prefix='/api/practice')
     app.register_blueprint(awards_bp, url_prefix='/api/awards')
     app.register_blueprint(management_bp, url_prefix='/api/management')
     app.register_blueprint(special_redemptions_bp, url_prefix='/api/special-redemptions')
+    app.register_blueprint(lottery_bp, url_prefix='/api/lottery')
 
     # Frontend file path - one level up from the backend directory
     FRONTEND_DIR = os.path.join(os.path.dirname(__file__), '..', 'frontend')
@@ -67,6 +69,8 @@ def _auto_migrate(app):
     MIGRATIONS = [
         ('children', 'lottery_tickets',
          'ALTER TABLE children ADD COLUMN lottery_tickets INTEGER DEFAULT 0'),
+        ('special_redemptions', 'lottery_draw_result_id',
+         'ALTER TABLE special_redemptions ADD COLUMN lottery_draw_result_id INTEGER REFERENCES lottery_draw_results(id)'),
     ]
 
     from sqlalchemy import inspect, text
