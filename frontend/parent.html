@@ -722,11 +722,11 @@
         // ── 獎勵點數 / 抽獎卷 ─────────────────────────────────────
 
         function showRewardDialog(childId, childName) {
-            const minutes = prompt(`請輸入要獎勵給 ${childName} 的練琴獎勵點數:\n(必須是15的倍數)\n\n例如: 15, 30, 45, 60`);
+            const minutes = prompt(`請輸入要獎勵給 ${childName} 的練琴獎勵點數:\n(必須是5的倍數)\n\n例如: 5, 10, 15, 30`);
             if (!minutes || isNaN(minutes)) return;
             const numMinutes = parseInt(minutes);
             if (numMinutes <= 0) { showError('獎勵點數必須大於0'); return; }
-            if (numMinutes % 15 !== 0) { showError('獎勵點數必須是15的倍數'); return; }
+            if (numMinutes % 5 !== 0) { showError('獎勵點數必須是5的倍數'); return; }
             const reason = prompt(`請輸入獎勵原因(可選):\n例如: 表現良好、完成額外任務等`);
             rewardGameTime(childId, childName, numMinutes, reason || '家長獎勵');
         }
