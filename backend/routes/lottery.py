@@ -3,17 +3,11 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db, Child, Parent, LotteryRound, LotteryPrize, LotteryDrawResult, SpecialRedemption
+from routes.lottery_common import (
+    MODE_RANDOM, parse_identity as _parse_identity, check_child_access, award_prize_to_child,
+)
 
 lottery_bp = Blueprint('lottery', __name__)
-
-
-def _parse_identity(identity):
-    """Return (role, id_value). role is 'parent' or 'child'."""
-    if identity.startswith('parent_'):
-        return 'parent', int(identity.split('_')[1])
-    if identity.startswith('child_'):
-        return 'child', identity.split('_', 1)[1]
-    return None, None
 
 
 def _build_slots(prizes):
@@ -29,6 +23,7 @@ def _round_to_dict(rnd, include_prizes=True):
         'id': rnd.id,
         'child_id': rnd.child_id,
         'parent_id': rnd.parent_id,
+        'mode': rnd.mode,
         'pity_limit': rnd.pity_limit,
         'draws_used': rnd.draws_used,
         'status': rnd.status,
@@ -85,13 +80,15 @@ def create_round():
             return jsonify({'error': 'Each prize probability must be between 1 and 99'}), 400
 
     # No duplicate active round
-    existing = LotteryRound.query.filter_by(child_id=child_id, status='active').first()
+    existing = LotteryRound.query.filter_by(
+        child_id=child_id, status='active', mode=MODE_RANDOM).first()
     if existing:
         return jsonify({'error': 'Child already has an active lottery round'}), 400
 
     rnd = LotteryRound(
         parent_id=role_id,
         child_id=child_id,
+        mode=MODE_RANDOM,
         pity_limit=int(pity_limit),
     )
     db.session.add(rnd)
@@ -121,7 +118,7 @@ def finish_round(round_id):
         return jsonify({'error': 'Only parents can finish lottery rounds'}), 403
 
     rnd = LotteryRound.query.get(round_id)
-    if not rnd or rnd.parent_id != role_id:
+    if not rnd or rnd.parent_id != role_id or rnd.mode != MODE_RANDOM:
         return jsonify({'error': 'Round not found'}), 404
 
     if rnd.status == 'finished':
@@ -151,7 +148,12 @@ def list_rounds():
     if not child or child.parent_id != role_id:
         return jsonify({'error': 'Child not found'}), 404
 
-    rounds = LotteryRound.query.filter_by(child_id=child_id).order_by(LotteryRound.created_at.desc()).all()
+    rounds = (
+        LotteryRound.query
+        .filter_by(child_id=child_id, mode=MODE_RANDOM)
+        .order_by(LotteryRound.created_at.desc())
+        .all()
+    )
     return jsonify({'rounds': [_round_to_dict(r) for r in rounds]}), 200
 
 
@@ -167,18 +169,12 @@ def get_active_round():
     if not child_id:
         return jsonify({'error': 'child_id query param required'}), 400
 
-    # Permission check
-    if role == 'parent':
-        child = Child.query.get(child_id)
-        if not child or child.parent_id != role_id:
-            return jsonify({'error': 'Child not found'}), 404
-    elif role == 'child':
-        if role_id != child_id:
-            return jsonify({'error': 'Permission denied'}), 403
-    else:
-        return jsonify({'error': 'Invalid token'}), 401
+    _, err = check_child_access(role, role_id, child_id)
+    if err:
+        return err
 
-    rnd = LotteryRound.query.filter_by(child_id=child_id, status='active').first()
+    rnd = LotteryRound.query.filter_by(
+        child_id=child_id, status='active', mode=MODE_RANDOM).first()
     if not rnd:
         return jsonify({'active': False}), 200
 
@@ -206,7 +202,8 @@ def draw():
         return jsonify({'error': 'tickets must be at least 1'}), 400
     tickets = int(tickets)
 
-    rnd = LotteryRound.query.filter_by(child_id=child_id, status='active').first()
+    rnd = LotteryRound.query.filter_by(
+        child_id=child_id, status='active', mode=MODE_RANDOM).first()
     if not rnd:
         return jsonify({'error': 'No active lottery round'}), 400
 
@@ -239,26 +236,7 @@ def draw():
         db.session.add(draw_result)
         db.session.flush()  # get draw_result.id for FK
 
-        # Aggregate into an existing lottery SpecialRedemption of the same prize name,
-        # or create a new one if none exists yet.
-        existing_sr = SpecialRedemption.query.filter(
-            SpecialRedemption.child_id == child_id,
-            SpecialRedemption.content == chosen.name,
-            SpecialRedemption.points_cost == 0,
-            SpecialRedemption.lottery_draw_result_id.isnot(None),
-        ).first()
-        if existing_sr is not None:
-            existing_sr.quantity = (existing_sr.quantity or 0) + 1
-        else:
-            sr = SpecialRedemption(
-                parent_id=rnd.parent_id,
-                child_id=child_id,
-                content=chosen.name,
-                points_cost=0,
-                quantity=1,
-                lottery_draw_result_id=draw_result.id,
-            )
-            db.session.add(sr)
+        award_prize_to_child(rnd.parent_id, child_id, chosen.name, draw_result.id)
 
         results.append({
             'draw_index': current_draw_index,
@@ -300,19 +278,14 @@ def history():
     if not child_id:
         return jsonify({'error': 'child_id query param required'}), 400
 
-    if role == 'parent':
-        child = Child.query.get(child_id)
-        if not child or child.parent_id != role_id:
-            return jsonify({'error': 'Child not found'}), 404
-    elif role == 'child':
-        if role_id != child_id:
-            return jsonify({'error': 'Permission denied'}), 403
-    else:
-        return jsonify({'error': 'Invalid token'}), 401
+    _, err = check_child_access(role, role_id, child_id)
+    if err:
+        return err
 
     results = (
         LotteryDrawResult.query
-        .filter_by(child_id=child_id)
+        .join(LotteryRound, LotteryDrawResult.round_id == LotteryRound.id)
+        .filter(LotteryDrawResult.child_id == child_id, LotteryRound.mode == MODE_RANDOM)
         .order_by(LotteryDrawResult.created_at.desc())
         .all()
     )

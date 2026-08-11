@@ -53,6 +53,14 @@ All datetimes are stored as **naive UTC** in the DB. All API responses serialize
 ('table_name', 'column_name', 'ALTER TABLE table_name ADD COLUMN column_name TYPE DEFAULT value'),
 ```
 
+**Production data safety (before every commit):** pushing to `master` auto-deploys to the cloud server, which runs `_auto_migrate` against the **live MySQL DB holding real family data**. Never commit a change that could damage or hide it. Before committing, check:
+
+1. **Additive only** — `ADD COLUMN` is safe. Dropping, renaming or retyping a column, or any destructive `UPDATE`/`DELETE`, must never run automatically; do it as a deliberate one-off.
+2. **Existing rows must stay visible** — if new code filters on a new column (e.g. `mode='random'`), rows written by the old code must end up matching that filter. Add an idempotent backfill to `BACKFILLS` in `app.py` rather than relying on the engine's `DEFAULT` behaviour.
+3. **MySQL, not just SQLite** — verify the ALTER syntax works on both, and that new column names aren't MySQL reserved words.
+4. **Concurrency** — `Procfile` runs gunicorn with 2 workers, so `create_app()` (and therefore the migration) runs twice in parallel. Migration steps must tolerate losing that race without failing to boot.
+5. **Prove it** — simulate the upgrade before committing: build a DB with the *old* schema, populate it with representative data, boot the new code against it twice, and confirm row counts, balances and existing records are unchanged.
+
 **SQLite DB location:** `backend/instance/piano_app.db` (excluded from git).
 
 **Frontend API calls:** all calls go through `API_BASE_URL = window.location.origin + '/api'` (auto-detects host), using `currentToken` stored in the JS global scope.

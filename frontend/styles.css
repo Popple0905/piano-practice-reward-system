@@ -855,8 +855,170 @@ body {
     flex: 1;
 }
 
+/* ── Ichiban Kuji (一番賞) ──
+   Prize rows are their own 4-column grid: grade badge / content / quantity / remove.
+   They must NOT reuse .form-row, which is a fixed 2-column grid. */
+
+.ichiban-grid-head,
+.ichiban-row {
+    display: grid;
+    grid-template-columns: 58px 1fr 88px 36px;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Column labels are shown once, above the rows, instead of on every row */
+.ichiban-grid-head {
+    padding: 0 2px 7px;
+    color: var(--text-secondary);
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.9px;
+}
+
+.ichiban-row { margin-bottom: 8px; }
+
+.ichiban-row input {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--bg-elevated);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    color: var(--text-primary);
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.ichiban-row input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: #fff;
+    box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.ichiban-row input[type="number"] { text-align: center; padding: 10px 4px; }
+
+.ichiban-grade {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-radius: var(--radius-pill);
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+}
+
+.ichiban-row-remove {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid rgba(217,64,64,0.3);
+    border-radius: var(--radius-pill);
+    background: var(--danger-dim);
+    color: var(--danger);
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ichiban-row-remove:hover { background: var(--danger); color: #fff; }
+
+.ichiban-editor-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 13px;
+    border-top: 1px dashed var(--border-strong);
+}
+
+.ichiban-total { font-size: 12px; font-weight: 700; color: var(--text-subdued); }
+.ichiban-total strong { font-size: 17px; font-weight: 900; color: var(--accent); margin-left: 4px; }
+
+/* ── Active round (shared by parent + child) ── */
+.ichiban-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+
+.ichiban-progress {
+    height: 10px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.ichiban-progress > span {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-light), var(--accent));
+    border-radius: var(--radius-pill);
+    transition: width 0.3s ease;
+}
+
+.ichiban-prize {
+    display: grid;
+    grid-template-columns: 58px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.ichiban-prize:last-child { border-bottom: none; }
+.ichiban-prize.is-out { opacity: 0.5; }
+.ichiban-prize.is-out .ichiban-grade { background: var(--bg-elevated); color: var(--text-subdued); }
+
+.ichiban-prize-name { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+
+.ichiban-prize-count {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--teal);
+    white-space: nowrap;
+}
+
+.ichiban-prize.is-out .ichiban-prize-count { color: var(--text-subdued); }
+
+/* ── Draw result cards ── */
+.ichiban-result-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.ichiban-result-card {
+    background: linear-gradient(135deg, var(--accent-light) 0%, var(--accent) 100%);
+    border-radius: var(--radius-md);
+    padding: 14px 10px;
+    text-align: center;
+    color: #fff;
+    box-shadow: var(--shadow-accent);
+}
+
+.ichiban-result-grade { font-size: 19px; font-weight: 900; margin-top: 4px; letter-spacing: 0.5px; }
+.ichiban-result-name  { font-size: 14px; font-weight: 700; margin-top: 3px; }
+.ichiban-result-index { font-size: 11px; font-weight: 600; opacity: 0.8; margin-top: 4px; }
+
 /* ── Mobile ── */
 @media (max-width: 768px) {
+    .ichiban-grid-head,
+    .ichiban-row { grid-template-columns: 50px 1fr 62px 32px; gap: 7px; }
+    .ichiban-row input { padding: 9px 10px; font-size: 14px; }
+    .ichiban-grade { font-size: 12px; padding: 7px 0; }
+    .ichiban-row-remove { width: 32px; height: 32px; font-size: 13px; }
+    .ichiban-prize { grid-template-columns: 50px 1fr auto; gap: 8px; }
+    /* .submit-btn goes full-width on mobile, so it wraps onto its own line here */
+    .ichiban-editor-foot { justify-content: center; }
+
     body { padding: 0; align-items: flex-start; }
 
     .container { border-radius: 0; min-height: 100vh; box-shadow: none; flex-direction: column; }

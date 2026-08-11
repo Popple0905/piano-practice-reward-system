@@ -106,16 +106,24 @@ class SpecialRedemptionRecord(db.Model):
 
 
 class LotteryRound(db.Model):
-    """A lottery round set up by a parent for a child"""
+    """A lottery round set up by a parent for a child.
+
+    Two modes share this table:
+      'random'  — classic lottery: each prize has a probability, one jackpot, pity counter.
+      'ichiban' — Ichiban Kuji: fixed prize quantities drawn without replacement, no jackpot.
+                  pity_limit / jackpot_hit are unused (stored as 0 / False).
+    """
     __tablename__ = 'lottery_rounds'
 
     id = db.Column(db.Integer, primary_key=True)
     parent_id = db.Column(db.Integer, db.ForeignKey('parents.id'), nullable=False)
     child_id = db.Column(db.String(20), db.ForeignKey('children.id'), nullable=False)
-    pity_limit = db.Column(db.Integer, nullable=False)
+    mode = db.Column(db.String(20), default='random')     # random / ichiban
+    pity_limit = db.Column(db.Integer, nullable=False)    # ichiban: 0 (not applicable)
+    total_draws = db.Column(db.Integer, default=0)        # ichiban: sum of prize quantities
     draws_used = db.Column(db.Integer, default=0)
     status = db.Column(db.String(20), default='active')   # active / finished
-    jackpot_hit = db.Column(db.Boolean, default=False)
+    jackpot_hit = db.Column(db.Boolean, default=False)    # ichiban: always False
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     finished_at = db.Column(db.DateTime, nullable=True)
 
@@ -130,8 +138,11 @@ class LotteryPrize(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     round_id = db.Column(db.Integer, db.ForeignKey('lottery_rounds.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
-    probability = db.Column(db.Integer, nullable=False)   # 1–99, all prizes in round must sum to 100
-    is_jackpot = db.Column(db.Boolean, default=False)
+    probability = db.Column(db.Integer, nullable=False)   # random mode: 1–99, sums to 100. ichiban: 0
+    is_jackpot = db.Column(db.Boolean, default=False)     # ichiban: always False
+    grade = db.Column(db.String(10), nullable=True)              # ichiban: 'A', 'B', 'C', ...
+    total_quantity = db.Column(db.Integer, nullable=True)       # ichiban: how many exist in the box
+    remaining_quantity = db.Column(db.Integer, nullable=True)   # ichiban: how many are left
 
 
 class LotteryDrawResult(db.Model):
@@ -145,6 +156,7 @@ class LotteryDrawResult(db.Model):
     prize_name = db.Column(db.String(100), nullable=False)  # snapshot
     is_jackpot = db.Column(db.Boolean, nullable=False)       # snapshot
     is_pity = db.Column(db.Boolean, default=False)           # snapshot
+    grade = db.Column(db.String(10), nullable=True)          # snapshot, ichiban only
     draw_index = db.Column(db.Integer, nullable=False)       # 1-based index within the round
     redeemed = db.Column(db.Boolean, default=False)
     redeemed_at = db.Column(db.DateTime, nullable=True)

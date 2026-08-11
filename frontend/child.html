@@ -90,6 +90,7 @@
                         <button class="nav-tab" onclick="switchTab('request-game')">🎮 申請遊戲時間</button>
                         <button class="nav-tab" onclick="switchTab('special-redemptions-child')">🎁 特殊兌換</button>
                         <button class="nav-tab" onclick="switchTab('lottery-child')">🎰 抽獎</button>
+                        <button class="nav-tab" onclick="switchTab('ichiban-child')">🎏 一番賞</button>
                         <button class="nav-tab" onclick="switchTab('reward-history')">📜 兌換紀錄</button>
                     </div>
 
@@ -183,6 +184,34 @@
                         <div class="form-section">
                             <h3>📜 抽獎紀錄</h3>
                             <div id="lotteryHistoryList" style="margin-top:15px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 一番賞 -->
+                    <div id="ichiban-child" class="tab-content">
+                        <div id="ichibanRoundInfoSection" class="form-section" style="display:none;">
+                            <h3>🎏 本箱一番賞</h3>
+                            <div id="ichibanRoundInfo" style="margin-top:15px;"></div>
+                        </div>
+                        <div id="ichibanNoRoundSection" class="form-section" style="display:none;">
+                            <p style="text-align:center;color:var(--text-subdued);padding:20px;">目前沒有進行中的一番賞，請等候家長設定。</p>
+                        </div>
+                        <div id="ichibanDrawSection" class="form-section" style="display:none;">
+                            <h3>🎟️ 進行抽獎</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="ichibanDrawCount">抽獎張數</label>
+                                    <input type="number" id="ichibanDrawCount" value="1" min="1">
+                                </div>
+                                <div class="form-group" style="justify-content:flex-end;display:flex;align-items:flex-end;">
+                                    <button class="submit-btn" style="margin:0;" onclick="performIchibanDraw()">🎏 開始抽獎</button>
+                                </div>
+                            </div>
+                            <div id="ichibanDrawResult" style="margin-top:12px;"></div>
+                        </div>
+                        <div class="form-section">
+                            <h3>📜 一番賞紀錄</h3>
+                            <div id="ichibanHistoryList" style="margin-top:15px;"></div>
                         </div>
                     </div>
 
@@ -371,6 +400,7 @@
             else if (tabName === 'reward-history') loadRewardHistory(currentUserId);
             else if (tabName === 'special-redemptions-child') loadSpecialRedemptionsChild(currentUserId);
             else if (tabName === 'lottery-child') loadLotteryTab();
+            else if (tabName === 'ichiban-child') loadIchibanTab();
         }
 
         // ── 孩子儀表板 ────────────────────────────────────────────
@@ -623,8 +653,11 @@
                     const quantityText = item.quantity !== null
                         ? `<span style="font-size:11px;color:var(--text-subdued);">剩餘數量：${item.quantity}</span>`
                         : '';
+                    // Ichiban prizes arrive named "A賞：內容", which is how we tell them apart
+                    // from classic lottery prizes (both share the from_lottery flag).
+                    const isIchiban = item.from_lottery && /^[A-Z]賞：/.test(item.content);
                     const lotteryTag = item.from_lottery
-                        ? `<span style="font-size:11px;background:#e67e22;color:#fff;padding:1px 6px;border-radius:4px;margin-left:4px;">🎰 抽獎獎品</span>`
+                        ? `<span style="font-size:11px;background:#e67e22;color:#fff;padding:1px 6px;border-radius:4px;margin-left:4px;">${isIchiban ? '🎏 一番賞獎品' : '🎰 抽獎獎品'}</span>`
                         : '';
                     const icon = item.from_lottery ? '🏅' : '🎁';
                     const btnLabel = item.from_lottery ? '領取' : '兌換';
@@ -789,6 +822,144 @@
                         <div class="record-header">
                             <div>
                                 <div class="record-date">${r.is_jackpot ? '🏆 ' : '🎁 '}${r.prize_name}${r.is_pity ? ' <span style="font-size:11px;background:#e74c3c;color:#fff;padding:1px 5px;border-radius:4px;">保底</span>' : ''}</div>
+                                <div style="font-size:12px;color:var(--text-subdued);margin-top:3px;">
+                                    第 ${r.draw_index} 抽　${formatDatetime(r.created_at)}
+                                </div>
+                            </div>
+                            <div style="font-size:12px;color:${r.redeemed ? 'var(--success)' : 'var(--text-subdued)'};">
+                                ${r.redeemed ? '✅ 已兌換' : '未兌換'}
+                            </div>
+                        </div>
+                    </div>`).join('');
+            } catch (e) {
+                list.innerHTML = `<p style="color:var(--danger)">載入失敗：${e.message}</p>`;
+            }
+        }
+
+        // ── 一番賞（孩子端） ──────────────────────────────────────
+        // 獎項數量固定、抽完為止，所以連抽張數上限為本箱剩餘抽數。
+
+        async function loadIchibanTab() {
+            const roundSection = document.getElementById('ichibanRoundInfoSection');
+            const noRoundSection = document.getElementById('ichibanNoRoundSection');
+            const drawSection = document.getElementById('ichibanDrawSection');
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/ichiban/active?child_id=${currentUserId}`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                const data = await res.json();
+                if (data.active) {
+                    roundSection.style.display = 'block';
+                    noRoundSection.style.display = 'none';
+                    drawSection.style.display = 'block';
+                    renderIchibanRound(data.round);
+                } else {
+                    roundSection.style.display = 'none';
+                    noRoundSection.style.display = 'block';
+                    drawSection.style.display = 'none';
+                }
+            } catch (e) {
+                noRoundSection.style.display = 'block';
+                roundSection.style.display = 'none';
+                drawSection.style.display = 'none';
+            }
+
+            loadIchibanHistory();
+        }
+
+        function renderIchibanRound(rnd) {
+            const pct = rnd.total_draws ? Math.round((rnd.draws_used / rnd.total_draws) * 100) : 0;
+            const prizesHtml = rnd.prizes.map(p => {
+                const soldOut = p.remaining_quantity === 0;
+                return `
+                    <div class="ichiban-prize${soldOut ? ' is-out' : ''}">
+                        <div class="ichiban-grade">${p.grade}賞</div>
+                        <div class="ichiban-prize-name">${p.name}</div>
+                        <div class="ichiban-prize-count">${soldOut ? '已抽完' : `剩 ${p.remaining_quantity} / ${p.total_quantity}`}</div>
+                    </div>`;
+            }).join('');
+
+            document.getElementById('ichibanRoundInfo').innerHTML = `
+                <div class="ichiban-stats">
+                    <div class="child-stat-item">
+                        <div class="child-stat-value">${rnd.total_draws}</div>
+                        <div class="child-stat-label">總抽數</div>
+                    </div>
+                    <div class="child-stat-item">
+                        <div class="child-stat-value">${rnd.draws_used}</div>
+                        <div class="child-stat-label">已抽出</div>
+                    </div>
+                    <div class="child-stat-item">
+                        <div class="child-stat-value">${rnd.remaining_draws}</div>
+                        <div class="child-stat-label">剩餘</div>
+                    </div>
+                </div>
+                <div class="ichiban-progress"><span style="width:${pct}%;"></span></div>
+                ${prizesHtml}`;
+
+            const countEl = document.getElementById('ichibanDrawCount');
+            countEl.max = rnd.remaining_draws;
+            if (parseInt(countEl.value) > rnd.remaining_draws) countEl.value = rnd.remaining_draws;
+        }
+
+        async function performIchibanDraw() {
+            const tickets = parseInt(document.getElementById('ichibanDrawCount').value);
+            const resultEl = document.getElementById('ichibanDrawResult');
+            if (!tickets || tickets < 1) {
+                resultEl.innerHTML = '<p style="color:var(--danger)">請輸入至少 1 張</p>';
+                return;
+            }
+            try {
+                const res = await fetch(`${API_BASE_URL}/ichiban/draw`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tickets })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || '抽獎失敗');
+                renderIchibanResults(data, resultEl);
+                loadGameBalance(currentUserId);
+                loadIchibanTab();
+            } catch (e) {
+                resultEl.innerHTML = `<p style="color:var(--danger)">抽獎失敗：${e.message}</p>`;
+            }
+        }
+
+        function renderIchibanResults(data, container) {
+            const cards = data.results.map(r => `
+                <div class="ichiban-result-card">
+                    <div style="font-size:22px;">🎏</div>
+                    <div class="ichiban-result-grade">${r.grade}賞</div>
+                    <div class="ichiban-result-name">${r.prize_name}</div>
+                    <div class="ichiban-result-index">第 ${r.draw_index} 抽</div>
+                </div>`).join('');
+            container.innerHTML = `
+                <div class="ichiban-result-grid">${cards}</div>
+                <p style="font-size:13px;color:var(--text-subdued);">
+                    消耗 ${data.tickets_used} 張　剩餘抽獎卷 ${data.remaining_tickets} 張　本箱還剩 ${data.remaining_draws} 抽
+                    ${data.round_status === 'finished' ? '　<strong style="color:var(--success)">🎉 全部抽完了！</strong>' : ''}
+                </p>`;
+        }
+
+        async function loadIchibanHistory() {
+            const list = document.getElementById('ichibanHistoryList');
+            list.innerHTML = '<p style="text-align:center;color:var(--text-subdued);">載入中...</p>';
+            try {
+                const res = await fetch(`${API_BASE_URL}/ichiban/history?child_id=${currentUserId}`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                const data = await res.json();
+                const results = data.results || [];
+                if (results.length === 0) {
+                    list.innerHTML = '<p style="text-align:center;color:var(--text-subdued);padding:20px;">尚無一番賞紀錄</p>';
+                    return;
+                }
+                list.innerHTML = results.map(r => `
+                    <div class="record-item">
+                        <div class="record-header">
+                            <div>
+                                <div class="record-date">🎏 <strong style="color:var(--accent);">${r.grade}賞</strong>　${r.prize_name}</div>
                                 <div style="font-size:12px;color:var(--text-subdued);margin-top:3px;">
                                     第 ${r.draw_index} 抽　${formatDatetime(r.created_at)}
                                 </div>

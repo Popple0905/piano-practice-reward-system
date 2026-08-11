@@ -81,6 +81,7 @@
                         <button class="nav-tab" onclick="switchTab('manage-children')">👤 管理兒童帳號</button>
                         <button class="nav-tab" onclick="switchTab('special-redemptions-mgmt')">🎁 特殊兌換</button>
                         <button class="nav-tab" onclick="switchTab('lottery-mgmt')">🎰 設定抽獎</button>
+                        <button class="nav-tab" onclick="switchTab('ichiban-mgmt')">🎏 設定一番賞</button>
                         <button class="nav-tab" onclick="switchTab('parent-settings')">⚙️ 帳號設定</button>
                     </div>
 
@@ -184,6 +185,13 @@
                     <!-- 抽獎管理 -->
                     <div id="lottery-mgmt" class="tab-content">
                         <div id="lotteryChildSections" style="display:flex;flex-direction:column;gap:20px;">
+                            <div style="text-align:center;color:var(--text-subdued);padding:20px;">載入中...</div>
+                        </div>
+                    </div>
+
+                    <!-- 一番賞管理 -->
+                    <div id="ichiban-mgmt" class="tab-content">
+                        <div id="ichibanChildSections" style="display:flex;flex-direction:column;gap:20px;">
                             <div style="text-align:center;color:var(--text-subdued);padding:20px;">載入中...</div>
                         </div>
                     </div>
@@ -382,6 +390,7 @@
             else if (tabName === 'manage-children') loadManageChildren();
             else if (tabName === 'special-redemptions-mgmt') loadSpecialRedemptionsMgmt();
             else if (tabName === 'lottery-mgmt') loadLotteryMgmt();
+            else if (tabName === 'ichiban-mgmt') loadIchibanMgmt();
         }
 
         // ── 家長儀表板 ────────────────────────────────────────────
@@ -1220,6 +1229,194 @@
                 if (!res.ok) throw new Error('結束失敗');
                 const child = _lotteryChildren.find(c => c.id === childId);
                 if (child) await refreshChildLotterySection(child);
+            } catch (e) {
+                alert('結束失敗：' + e.message);
+            }
+        }
+
+        // ── 一番賞管理（家長） ────────────────────────────────────
+        // 與抽獎的差別：獎項數量固定、依序命名 A賞/B賞/…、無大獎與保底、抽完才能開下一輪。
+
+        let _ichibanChildren = [];
+
+        const GRADE_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+        async function loadIchibanMgmt() {
+            const container = document.getElementById('ichibanChildSections');
+            try {
+                const res = await fetch(`${API_BASE_URL}/practice/parent/children`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                const data = await res.json();
+                _ichibanChildren = data.children || [];
+                if (_ichibanChildren.length === 0) {
+                    container.innerHTML = '<div style="text-align:center;color:var(--text-subdued);padding:20px;">尚無孩子帳號</div>';
+                    return;
+                }
+                container.innerHTML = _ichibanChildren.map(c => `
+                    <div class="form-section" id="ichiban-child-${c.id}">
+                        <h3>👧 ${c.name}（${c.id}）</h3>
+                        <div id="ichiban-content-${c.id}" style="margin-top:12px;">
+                            <div style="color:var(--text-subdued);font-size:13px;">載入中...</div>
+                        </div>
+                    </div>`).join('');
+                await Promise.all(_ichibanChildren.map(c => refreshChildIchibanSection(c)));
+            } catch (e) {
+                container.innerHTML = '<div style="text-align:center;color:var(--danger);padding:20px;">載入失敗</div>';
+            }
+        }
+
+        async function refreshChildIchibanSection(child) {
+            const contentEl = document.getElementById(`ichiban-content-${child.id}`);
+            if (!contentEl) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/ichiban/active?child_id=${child.id}`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                const data = await res.json();
+                if (data.active && data.round) {
+                    contentEl.innerHTML = renderIchibanActive(data.round, child.id);
+                } else {
+                    const cid = child.id;
+                    contentEl.innerHTML = `
+                        <p style="font-size:12px;color:var(--text-subdued);margin-bottom:14px;line-height:1.6;">
+                            由上而下依序為 A賞、B賞、C賞…，可自由調整每個賞的數量。<br>
+                            建立後孩子每抽一次就少一個獎項，全部抽完才能開下一箱。
+                        </p>
+                        <div class="ichiban-grid-head">
+                            <div>賞別</div><div>獎項內容</div><div style="text-align:center;">數量</div><div></div>
+                        </div>
+                        <div id="ichibanPrizeRows-${cid}"></div>
+                        <button type="button" class="action-btn" style="margin-top:4px;padding:7px 16px;font-size:12px;" onclick="addIchibanPrizeRow('${cid}')">＋ 新增獎項</button>
+                        <div class="ichiban-editor-foot">
+                            <div class="ichiban-total">總抽數<strong id="ichibanTotal-${cid}">0</strong></div>
+                            <button class="submit-btn" style="margin:0;" onclick="createIchibanRound('${cid}')">🎏 建立一番賞</button>
+                        </div>
+                        <div id="ichibanCreateResult-${cid}" style="margin-top:12px;"></div>`;
+                    addIchibanPrizeRow(cid, 1);
+                    addIchibanPrizeRow(cid, 2);
+                    addIchibanPrizeRow(cid, 3);
+                }
+            } catch (e) {
+                contentEl.innerHTML = '<div style="color:var(--danger);font-size:13px;">載入失敗</div>';
+            }
+        }
+
+        function renderIchibanActive(rnd, childId) {
+            const pct = rnd.total_draws ? Math.round((rnd.draws_used / rnd.total_draws) * 100) : 0;
+            return `
+                <div class="ichiban-stats">
+                    <div class="child-stat-item">
+                        <div class="child-stat-value">${rnd.total_draws}</div>
+                        <div class="child-stat-label">總抽數</div>
+                    </div>
+                    <div class="child-stat-item">
+                        <div class="child-stat-value">${rnd.draws_used}</div>
+                        <div class="child-stat-label">已抽出</div>
+                    </div>
+                    <div class="child-stat-item">
+                        <div class="child-stat-value">${rnd.remaining_draws}</div>
+                        <div class="child-stat-label">剩餘</div>
+                    </div>
+                </div>
+                <div class="ichiban-progress"><span style="width:${pct}%;"></span></div>
+                ${renderIchibanPrizeList(rnd.prizes)}
+                <div class="ichiban-editor-foot">
+                    <div class="ichiban-total" style="font-weight:600;">抽完才能開下一箱</div>
+                    <button class="action-btn" style="width:auto;padding:9px 18px;font-size:12px;" onclick="endIchibanRound(${rnd.id}, '${childId}')">強制結束本箱</button>
+                </div>`;
+        }
+
+        function renderIchibanPrizeList(prizes) {
+            return prizes.map(p => {
+                const soldOut = p.remaining_quantity === 0;
+                return `
+                    <div class="ichiban-prize${soldOut ? ' is-out' : ''}">
+                        <div class="ichiban-grade">${p.grade}賞</div>
+                        <div class="ichiban-prize-name">${p.name}</div>
+                        <div class="ichiban-prize-count">${soldOut ? '已抽完' : `剩 ${p.remaining_quantity} / ${p.total_quantity}`}</div>
+                    </div>`;
+            }).join('');
+        }
+
+        function addIchibanPrizeRow(childId, defaultQty = 1) {
+            const container = document.getElementById(`ichibanPrizeRows-${childId}`);
+            if (!container) return;
+            if (container.querySelectorAll('.ichiban-row').length >= GRADE_LETTERS.length) {
+                alert(`最多只能設定 ${GRADE_LETTERS.length} 個獎項（A賞～Z賞）`);
+                return;
+            }
+            const row = document.createElement('div');
+            row.className = 'ichiban-row';
+            row.innerHTML = `
+                <div class="ichiban-grade prize-grade-label">—</div>
+                <input type="text" class="ichiban-prize-name" placeholder="例: 去遊樂園">
+                <input type="number" class="ichiban-prize-qty" min="1" value="${defaultQty}" oninput="updateIchibanTotal('${childId}')">
+                <button type="button" class="ichiban-row-remove" title="刪除這個獎項" onclick="removeIchibanPrizeRow(this, '${childId}')">✕</button>`;
+            container.appendChild(row);
+            updateIchibanTotal(childId);
+        }
+
+        function removeIchibanPrizeRow(btn, childId) {
+            btn.closest('.ichiban-row').remove();
+            updateIchibanTotal(childId);
+        }
+
+        function updateIchibanTotal(childId) {
+            const container = document.getElementById(`ichibanPrizeRows-${childId}`);
+            if (!container) return;
+            const rows = [...container.querySelectorAll('.ichiban-row')];
+            // Grades follow row order, so relabel every row whenever one is added or removed.
+            rows.forEach((row, i) => {
+                row.querySelector('.prize-grade-label').textContent = `${GRADE_LETTERS[i]}賞`;
+            });
+            const total = rows.reduce(
+                (sum, row) => sum + (parseInt(row.querySelector('.ichiban-prize-qty').value) || 0), 0);
+            const el = document.getElementById(`ichibanTotal-${childId}`);
+            if (el) el.textContent = total;
+        }
+
+        async function createIchibanRound(childId) {
+            const resultEl = document.getElementById(`ichibanCreateResult-${childId}`);
+            const container = document.getElementById(`ichibanPrizeRows-${childId}`);
+
+            const prizes = [...container.querySelectorAll('.ichiban-row')].map(row => ({
+                name: row.querySelector('.ichiban-prize-name').value.trim(),
+                quantity: parseInt(row.querySelector('.ichiban-prize-qty').value) || 0,
+            }));
+
+            if (prizes.length === 0) { resultEl.innerHTML = '<p style="color:var(--danger)">請至少新增一個獎項</p>'; return; }
+            if (prizes.some(p => !p.name)) { resultEl.innerHTML = '<p style="color:var(--danger)">請填寫所有獎項內容</p>'; return; }
+            if (prizes.some(p => p.quantity < 1)) { resultEl.innerHTML = '<p style="color:var(--danger)">每個獎項數量至少為 1</p>'; return; }
+
+            const child = _ichibanChildren.find(c => c.id === childId);
+            try {
+                const res = await fetch(`${API_BASE_URL}/ichiban/rounds`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ child_id: childId, prizes })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    resultEl.innerHTML = `<p style="color:var(--danger)">❌ 建立失敗：${data.error}</p>`;
+                    return;
+                }
+                if (child) await refreshChildIchibanSection(child);
+            } catch (e) {
+                resultEl.innerHTML = `<p style="color:var(--danger)">❌ 建立失敗：${e.message}</p>`;
+            }
+        }
+
+        async function endIchibanRound(roundId, childId) {
+            if (!confirm('確定要強制結束這個一番賞？尚未抽出的獎項將會作廢。')) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/ichiban/rounds/${roundId}/finish`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                if (!res.ok) throw new Error('結束失敗');
+                const child = _ichibanChildren.find(c => c.id === childId);
+                if (child) await refreshChildIchibanSection(child);
             } catch (e) {
                 alert('結束失敗：' + e.message);
             }
