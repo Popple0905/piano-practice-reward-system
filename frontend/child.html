@@ -9,6 +9,10 @@
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
+    <div id="ichibanRevealOverlay" class="ichiban-reveal-overlay">
+        <img id="ichibanRevealGif" alt="開獎中" class="ichiban-reveal-gif">
+        <div class="ichiban-reveal-hint">點擊畫面繼續</div>
+    </div>
     <div class="container container--stacked">
         <!-- 上方歡迎區 -->
         <div class="welcome-section">
@@ -910,6 +914,10 @@
                 resultEl.innerHTML = '<p style="color:var(--danger)">請輸入至少 1 張</p>';
                 return;
             }
+            const overlay = document.getElementById('ichibanRevealOverlay');
+            const overlayGif = document.getElementById('ichibanRevealGif');
+            overlayGif.src = `/.icon/frieren-mimic-8sec.gif?t=${Date.now()}`;
+            overlay.classList.add('is-active');
             try {
                 const res = await fetch(`${API_BASE_URL}/ichiban/draw`, {
                     method: 'POST',
@@ -918,12 +926,24 @@
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || '抽獎失敗');
+                await waitForOverlayDismiss(overlay);
+                overlay.classList.remove('is-active');
                 renderIchibanResults(data, resultEl);
                 loadGameBalance(currentUserId);
                 loadIchibanTab();
             } catch (e) {
+                overlay.classList.remove('is-active');
                 resultEl.innerHTML = `<p style="color:var(--danger)">抽獎失敗：${e.message}</p>`;
             }
+        }
+
+        function waitForOverlayDismiss(overlay) {
+            return new Promise(resolve => {
+                overlay.addEventListener('click', function handler() {
+                    overlay.removeEventListener('click', handler);
+                    resolve();
+                }, { once: true });
+            });
         }
 
         function renderIchibanResults(data, container) {
