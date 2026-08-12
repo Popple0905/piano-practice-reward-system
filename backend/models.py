@@ -143,6 +143,9 @@ class LotteryPrize(db.Model):
     grade = db.Column(db.String(10), nullable=True)              # ichiban: 'A', 'B', 'C', ...
     total_quantity = db.Column(db.Integer, nullable=True)       # ichiban: how many exist in the box
     remaining_quantity = db.Column(db.Integer, nullable=True)   # ichiban: how many are left
+    is_last_one = db.Column(db.Boolean, default=False)          # ichiban: Last One 賞 — excluded from
+                                                                  # the normal draw pool; auto-awarded
+                                                                  # alongside whichever prize empties the box
 
 
 class LotteryDrawResult(db.Model):
@@ -157,6 +160,7 @@ class LotteryDrawResult(db.Model):
     is_jackpot = db.Column(db.Boolean, nullable=False)       # snapshot
     is_pity = db.Column(db.Boolean, default=False)           # snapshot
     grade = db.Column(db.String(10), nullable=True)          # snapshot, ichiban only
+    is_last_one = db.Column(db.Boolean, default=False)       # snapshot: bonus grant from Last One 賞
     draw_index = db.Column(db.Integer, nullable=False)       # 1-based index within the round
     redeemed = db.Column(db.Boolean, default=False)
     redeemed_at = db.Column(db.DateTime, nullable=True)

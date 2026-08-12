@@ -85,6 +85,10 @@ def _auto_migrate(app):
          'ALTER TABLE lottery_prizes ADD COLUMN remaining_quantity INTEGER'),
         ('lottery_draw_results', 'grade',
          'ALTER TABLE lottery_draw_results ADD COLUMN grade VARCHAR(10)'),
+        ('lottery_prizes', 'is_last_one',
+         'ALTER TABLE lottery_prizes ADD COLUMN is_last_one BOOLEAN DEFAULT 0'),
+        ('lottery_draw_results', 'is_last_one',
+         'ALTER TABLE lottery_draw_results ADD COLUMN is_last_one BOOLEAN DEFAULT 0'),
     ]
 
     # Backfills that must hold regardless of how the column was created. Adding a column

@@ -1283,6 +1283,11 @@
                             由上而下依序為 A賞、B賞、C賞…，可自由調整每個賞的數量。<br>
                             建立後孩子每抽一次就少一個獎項，全部抽完才能開下一箱。
                         </p>
+                        <div class="ichiban-lastone-box">
+                            <label for="ichibanLastOneName-${cid}">🌟 Last One 賞（選填，數量固定為 1）</label>
+                            <p>抽到本箱最後一抽時，除了原本抽中的獎項外，會額外自動獲得這個賞。留空表示不設定。</p>
+                            <input type="text" id="ichibanLastOneName-${cid}" placeholder="例: 隱藏版簽名小卡">
+                        </div>
                         <div class="ichiban-grid-head">
                             <div>賞別</div><div>獎項內容</div><div style="text-align:center;">數量</div><div></div>
                         </div>
@@ -1331,8 +1336,8 @@
             return prizes.map(p => {
                 const soldOut = p.remaining_quantity === 0;
                 return `
-                    <div class="ichiban-prize${soldOut ? ' is-out' : ''}">
-                        <div class="ichiban-grade">${p.grade}賞</div>
+                    <div class="ichiban-prize${soldOut ? ' is-out' : ''}${p.is_last_one ? ' is-lastone' : ''}">
+                        <div class="ichiban-grade">${p.is_last_one ? '🌟 LAST' : `${p.grade}賞`}</div>
                         <div class="ichiban-prize-name">${p.name}</div>
                         <div class="ichiban-prize-count">${soldOut ? '已抽完' : `剩 ${p.remaining_quantity} / ${p.total_quantity}`}</div>
                     </div>`;
@@ -1379,11 +1384,13 @@
         async function createIchibanRound(childId) {
             const resultEl = document.getElementById(`ichibanCreateResult-${childId}`);
             const container = document.getElementById(`ichibanPrizeRows-${childId}`);
+            const lastOneInput = document.getElementById(`ichibanLastOneName-${childId}`);
 
             const prizes = [...container.querySelectorAll('.ichiban-row')].map(row => ({
                 name: row.querySelector('.ichiban-prize-name').value.trim(),
                 quantity: parseInt(row.querySelector('.ichiban-prize-qty').value) || 0,
             }));
+            const lastOneName = (lastOneInput?.value || '').trim();
 
             if (prizes.length === 0) { resultEl.innerHTML = '<p style="color:var(--danger)">請至少新增一個獎項</p>'; return; }
             if (prizes.some(p => !p.name)) { resultEl.innerHTML = '<p style="color:var(--danger)">請填寫所有獎項內容</p>'; return; }
@@ -1394,7 +1401,7 @@
                 const res = await fetch(`${API_BASE_URL}/ichiban/rounds`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ child_id: childId, prizes })
+                    body: JSON.stringify({ child_id: childId, prizes, last_one_name: lastOneName })
                 });
                 const data = await res.json();
                 if (!res.ok) {

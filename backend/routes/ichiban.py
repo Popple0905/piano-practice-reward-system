@@ -26,8 +26,13 @@ GRADES = string.ascii_uppercase  # A–Z, so at most 26 prize grades per round
 MAX_PRIZES = len(GRADES)
 
 
-def _display_name(grade, name):
-    """The label a child sees for a won prize, e.g. 'A賞：去遊樂園'."""
+def _display_name(grade, name, is_last_one=False):
+    """The label a child sees for a won prize, e.g. 'A賞：去遊樂園'.
+
+    Last One 賞 stands apart from the graded box (no letter grade of its own).
+    """
+    if is_last_one:
+        return f'Last One賞：{name}'
     return f'{grade}賞：{name}'
 
 
@@ -46,15 +51,17 @@ def _round_to_dict(rnd, include_prizes=True):
         'finished_at': rnd.finished_at.isoformat() + 'Z' if rnd.finished_at else None,
     }
     if include_prizes:
+        # Last One 賞 has no grade (None sorts first), so it naturally leads the list.
         prizes = sorted(rnd.prizes, key=lambda p: p.grade or '')
         data['prizes'] = [
             {
                 'id': p.id,
                 'grade': p.grade,
                 'name': p.name,
-                'display_name': _display_name(p.grade, p.name),
+                'display_name': _display_name(p.grade, p.name, p.is_last_one),
                 'total_quantity': p.total_quantity,
                 'remaining_quantity': p.remaining_quantity,
+                'is_last_one': bool(p.is_last_one),
             }
             for p in prizes
         ]
@@ -68,8 +75,11 @@ def _round_to_dict(rnd, include_prizes=True):
 def create_round():
     """Parent sets up a new Ichiban Kuji box for a child.
 
-    Body: {child_id, prizes: [{name, quantity}, ...]} — grades are assigned A, B, C…
-    following the order of the list.
+    Body: {child_id, prizes: [{name, quantity}, ...], last_one_name?} — grades are
+    assigned A, B, C… following the order of `prizes`. `last_one_name` is an optional,
+    separate Last One 賞 (quantity fixed at 1, no letter grade of its own): it is
+    excluded from the normal draw pool and is automatically awarded, on top of
+    whatever prize is drawn, the moment the box's other prizes are fully drawn out.
     """
     identity = get_jwt_identity()
     role, role_id = parse_identity(identity)
@@ -79,6 +89,7 @@ def create_round():
     data = request.get_json() or {}
     child_id = data.get('child_id')
     prizes_data = data.get('prizes', [])
+    last_one_name = (data.get('last_one_name') or '').strip()
 
     if not child_id or not prizes_data:
         return jsonify({'error': 'Missing required fields'}), 400
@@ -90,7 +101,7 @@ def create_round():
     if not child or child.parent_id != role_id:
         return jsonify({'error': 'Child not found'}), 404
 
-    # Validate every prize before writing anything
+    # Validate every graded prize before writing anything
     cleaned = []
     for p in prizes_data:
         name = (p.get('name') or '').strip()
@@ -114,6 +125,7 @@ def create_round():
         child_id=child_id,
         mode=MODE_ICHIBAN,
         pity_limit=0,          # not applicable in ichiban mode
+        # Last One 賞 isn't drawn with a ticket — it doesn't count toward the ticket total.
         total_draws=sum(q for _, q in cleaned),
     )
     db.session.add(rnd)
@@ -128,6 +140,18 @@ def create_round():
             grade=GRADES[index],
             total_quantity=quantity,
             remaining_quantity=quantity,
+        ))
+
+    if last_one_name:
+        db.session.add(LotteryPrize(
+            round_id=rnd.id,
+            name=last_one_name,
+            probability=0,
+            is_jackpot=False,
+            grade=None,         # stands apart from the graded box, not part of A/B/C…
+            total_quantity=1,
+            remaining_quantity=1,
+            is_last_one=True,
         ))
 
     db.session.commit()
@@ -243,7 +267,10 @@ def draw():
         }), 400
 
     prizes = LotteryPrize.query.filter_by(round_id=rnd.id).all()
-    remaining_draws = sum(p.remaining_quantity or 0 for p in prizes)
+    last_one_prize = next((p for p in prizes if p.is_last_one), None)
+    # Last One 賞 sits outside the normal pool: it isn't drawn by a ticket, so it
+    # doesn't count toward how many tickets are needed to empty the box.
+    remaining_draws = sum(p.remaining_quantity or 0 for p in prizes if not p.is_last_one)
     if tickets > remaining_draws:
         return jsonify({
             'error': 'Not enough prizes left in this round',
@@ -253,7 +280,7 @@ def draw():
     results = []
     for _ in range(tickets):
         # Draw without replacement: every remaining prize copy is one equally likely slot.
-        pool = [p for p in prizes for _ in range(p.remaining_quantity or 0)]
+        pool = [p for p in prizes if not p.is_last_one for _ in range(p.remaining_quantity or 0)]
         chosen = random.choice(pool)
         chosen.remaining_quantity -= 1
         rnd.draws_used += 1
@@ -279,9 +306,42 @@ def draw():
             'grade': chosen.grade,
             'prize_name': chosen.name,
             'display_name': _display_name(chosen.grade, chosen.name),
+            'is_last_one': False,
         })
 
     remaining_draws -= tickets
+
+    # The ticket that empties the box also auto-wins the Last One 賞, on top of
+    # whatever it actually drew.
+    if remaining_draws == 0 and last_one_prize and (last_one_prize.remaining_quantity or 0) > 0:
+        last_one_prize.remaining_quantity -= 1
+
+        bonus_result = LotteryDrawResult(
+            round_id=rnd.id,
+            child_id=child_id,
+            prize_id=last_one_prize.id,
+            prize_name=last_one_prize.name,
+            is_jackpot=False,
+            is_pity=False,
+            is_last_one=True,
+            grade=last_one_prize.grade,
+            draw_index=rnd.draws_used,  # awarded alongside the ticket that just emptied the box
+        )
+        db.session.add(bonus_result)
+        db.session.flush()
+
+        award_prize_to_child(
+            rnd.parent_id, child_id,
+            _display_name(last_one_prize.grade, last_one_prize.name, True), bonus_result.id)
+
+        results.append({
+            'draw_index': bonus_result.draw_index,
+            'grade': last_one_prize.grade,
+            'prize_name': last_one_prize.name,
+            'display_name': _display_name(last_one_prize.grade, last_one_prize.name, True),
+            'is_last_one': True,
+        })
+
     if remaining_draws == 0:
         rnd.status = 'finished'
         rnd.finished_at = datetime.utcnow()
@@ -331,7 +391,8 @@ def history():
                 'round_id': r.round_id,
                 'grade': r.grade,
                 'prize_name': r.prize_name,
-                'display_name': _display_name(r.grade, r.prize_name),
+                'display_name': _display_name(r.grade, r.prize_name, r.is_last_one),
+                'is_last_one': bool(r.is_last_one),
                 'draw_index': r.draw_index,
                 'redeemed': r.redeemed,
                 'redeemed_at': r.redeemed_at.isoformat() + 'Z' if r.redeemed_at else None,

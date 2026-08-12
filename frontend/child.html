@@ -873,8 +873,8 @@
             const prizesHtml = rnd.prizes.map(p => {
                 const soldOut = p.remaining_quantity === 0;
                 return `
-                    <div class="ichiban-prize${soldOut ? ' is-out' : ''}">
-                        <div class="ichiban-grade">${p.grade}賞</div>
+                    <div class="ichiban-prize${soldOut ? ' is-out' : ''}${p.is_last_one ? ' is-lastone' : ''}">
+                        <div class="ichiban-grade">${p.is_last_one ? '🌟 LAST' : `${p.grade}賞`}</div>
                         <div class="ichiban-prize-name">${p.name}</div>
                         <div class="ichiban-prize-count">${soldOut ? '已抽完' : `剩 ${p.remaining_quantity} / ${p.total_quantity}`}</div>
                     </div>`;
@@ -928,11 +928,11 @@
 
         function renderIchibanResults(data, container) {
             const cards = data.results.map(r => `
-                <div class="ichiban-result-card">
-                    <div style="font-size:22px;">🎏</div>
-                    <div class="ichiban-result-grade">${r.grade}賞</div>
+                <div class="ichiban-result-card${r.is_last_one ? ' is-lastone' : ''}">
+                    <div style="font-size:22px;">${r.is_last_one ? '🌟' : '🎏'}</div>
+                    <div class="ichiban-result-grade">${r.is_last_one ? 'LAST ONE賞' : `${r.grade}賞`}</div>
                     <div class="ichiban-result-name">${r.prize_name}</div>
-                    <div class="ichiban-result-index">第 ${r.draw_index} 抽</div>
+                    <div class="ichiban-result-index">${r.is_last_one ? '恭喜額外獲得！' : `第 ${r.draw_index} 抽`}</div>
                 </div>`).join('');
             container.innerHTML = `
                 <div class="ichiban-result-grid">${cards}</div>
@@ -959,7 +959,7 @@
                     <div class="record-item">
                         <div class="record-header">
                             <div>
-                                <div class="record-date">🎏 <strong style="color:var(--accent);">${r.grade}賞</strong>　${r.prize_name}</div>
+                                <div class="record-date">🎏 ${r.is_last_one ? '<strong style="color:#ff9a3c;">🌟 LAST ONE賞</strong>' : `<strong style="color:var(--accent);">${r.grade}賞</strong>`}　${r.prize_name}</div>
                                 <div style="font-size:12px;color:var(--text-subdued);margin-top:3px;">
                                     第 ${r.draw_index} 抽　${formatDatetime(r.created_at)}
                                 </div>
